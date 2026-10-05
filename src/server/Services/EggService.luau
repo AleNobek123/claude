@@ -105,6 +105,53 @@ function EggService:_buy(player: Player, eggId: string)
 	Notify.Player(player, `Bought a {Config.Eggs[eggId].Name}! Hatch it in your hive.`, "good")
 end
 
+function EggService:_firstEmptySlot(player: Player, data): number?
+	for slot = 1, S.HiveService:GetUnlockedSlots(player) do
+		if not data.Bees[tostring(slot)] then
+			return slot
+		end
+	end
+	return nil
+end
+
+-- Rolls and places a bee from `eggId` into `slot`. The egg must already be paid for.
+function EggService:_hatchInto(player: Player, data, eggId: string, slot: number, nestIndex: number?)
+	local count = (data.Pity[eggId] or 0) + 1
+	local rarity, forced = self:RollRarity(eggId, count)
+	local pool = BeeData.ByRarity[rarity]
+	local beeId = pool[rng:NextInteger(1, #pool)]
+	local mutation = BeeClass.RollMutation(rng, false)
+	local record = BeeClass.NewRecord(beeId, mutation)
+
+	local order = Config.Rarities[rarity].Order
+	data.Pity[eggId] = order >= Config.Rarities.Legendary.Order and 0 or count
+	local isNew = not data.Codex[beeId]
+	data.Bees[tostring(slot)] = record
+	data.Codex[beeId] = true
+	data.Stats.EggsHatched += 1
+	S.DataService:MarkDirty(player, "Eggs", "Pity", "Bees", "Codex")
+
+	S.BeeService:RebuildSwarm(player)
+	S.HiveService:RefreshCells(player)
+
+	self.HatchResult:FireClient(player, {
+		Slot = slot,
+		Record = record,
+		Egg = eggId,
+		Pity = forced,
+		New = isNew,
+		Nest = nestIndex,
+	})
+	if order >= Config.Rarities.Legendary.Order or mutation == "Shadow" then
+		local def = BeeData.Bees[beeId]
+		local label = (mutation and (mutation .. " ") or "") .. def.Name
+		task.delay(nestIndex and 3.5 or 0, function()
+			Notify.All(`{player.DisplayName} hatched a {rarity} {label}!`, "rare")
+		end)
+	end
+end
+
+-- Hatch an owned egg into a chosen hive cell (hive menu)
 function EggService:_hatch(player: Player, eggId: string, slot: number)
 	local data = S.DataService:Get(player)
 	if not data or typeof(eggId) ~= "string" or typeof(slot) ~= "number" then
@@ -120,43 +167,43 @@ function EggService:_hatch(player: Player, eggId: string, slot: number)
 		Notify.Player(player, "That hive slot is locked.", "bad")
 		return
 	end
-	local key = tostring(slot)
-	if data.Bees[key] then
+	if data.Bees[tostring(slot)] then
 		Notify.Player(player, "Pick an empty hive slot.", "bad")
 		return
 	end
-
 	data.Eggs[eggId] -= 1
-	local count = (data.Pity[eggId] or 0) + 1
-	local rarity, forced = self:RollRarity(eggId, count)
-	local pool = BeeData.ByRarity[rarity]
-	local beeId = pool[rng:NextInteger(1, #pool)]
-	local mutation = BeeClass.RollMutation(rng, false)
-	local record = BeeClass.NewRecord(beeId, mutation)
+	self:_hatchInto(player, data, eggId, slot, nil)
+end
 
-	local order = Config.Rarities[rarity].Order
-	data.Pity[eggId] = order >= Config.Rarities.Legendary.Order and 0 or count
-	local isNew = not data.Codex[beeId]
-	data.Bees[key] = record
-	data.Codex[beeId] = true
-	data.Stats.EggsHatched += 1
-	S.DataService:MarkDirty(player, "Eggs", "Pity", "Bees", "Codex")
-
-	S.BeeService:RebuildSwarm(player)
-	S.HiveService:RefreshCells(player)
-
-	self.HatchResult:FireClient(player, {
-		Slot = slot,
-		Record = record,
-		Egg = eggId,
-		Pity = forced,
-		New = isNew,
-	})
-	if order >= Config.Rarities.Legendary.Order or mutation == "Shadow" then
-		local def = BeeData.Bees[beeId]
-		local label = (mutation and (mutation .. " ") or "") .. def.Name
-		Notify.All(`{player.DisplayName} hatched a {rarity} {label}!`, "rare")
+-- Physical nest: walk up, pay honey (or use an owned egg) and hatch into the first free cell
+function EggService:_nestHatch(player: Player, nestIndex: number)
+	local data = S.DataService:Get(player)
+	local nest = typeof(nestIndex) == "number" and Config.Nests[nestIndex]
+	if not data or not nest then
+		return
 	end
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local flat = root and (root.Position - nest.Position) * Vector3.new(1, 0, 1)
+	if not flat or flat.Magnitude > Config.NestRange then
+		return
+	end
+	local slot = self:_firstEmptySlot(player, data)
+	if not slot then
+		Notify.Player(player, "Your hive is full. Unlock a new cell first!", "bad")
+		return
+	end
+	local eggId = nest.Egg
+	if (data.Eggs[eggId] or 0) > 0 then
+		data.Eggs[eggId] -= 1
+	else
+		local price = self:Price(eggId, data)
+		if not price or not S.DataService:SpendHoney(player, price) then
+			Notify.Player(player, "Not enough honey for this egg.", "bad")
+			return
+		end
+	end
+	self:_hatchInto(player, data, eggId, slot, nestIndex)
 end
 
 function EggService:_feed(player: Player, slot: number, count: number)
@@ -250,6 +297,7 @@ function EggService:Init(services)
 	self.FeedBee = Net.Event("FeedBee")
 	self.UseSerum = Net.Event("UseSerum")
 	self.BuySerum = Net.Event("BuySerum")
+	self.NestHatch = Net.Event("NestHatch")
 end
 
 function EggService:Start()
@@ -278,7 +326,11 @@ function EggService:Start()
 			self:_buySerum(player)
 		end
 	end)
-	Players.PlayerRemoving:Connect(function() end)
+	self.NestHatch.OnServerEvent:Connect(function(player, nestIndex)
+		if Net.Allow(player, "NestHatch", 1.5) then
+			self:_nestHatch(player, nestIndex)
+		end
+	end)
 end
 
 return EggService

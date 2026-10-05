@@ -95,6 +95,9 @@ function Fx:Ring(position: Vector3, radius: number, color: Color3, duration: num
 end
 
 function Fx:Burst(position: Vector3, color: Color3, count: number?)
+	if C.Settings and C.Settings:Low() then
+		count = math.ceil((count or 18) / 3)
+	end
 	local part = anchorPart(position + Vector3.new(0, 1, 0))
 	local emitter = Instance.new("ParticleEmitter")
 	emitter.Color = ColorSequence.new(color)
@@ -140,7 +143,8 @@ function Fx:_onFx(kind: string, payload)
 	if kind == "Pollen" then
 		self:Popup(payload.Position + Vector3.new(0, 2, 0), "+" .. Format.Short(payload.Amount), Color3.fromRGB(255, 250, 200))
 	elseif kind == "Honey" then
-		self:Popup(payload.Position, "+" .. Format.Short(payload.Amount) .. " honey", Color3.fromRGB(255, 200, 50), true)
+		self:Popup(payload.Position, "+" .. Format.Short(payload.Amount), Color3.fromRGB(255, 200, 50), true)
+		C.Sound:Play("Coin", { Volume = 0.6 })
 	elseif kind == "Ability" then
 		local color = COLORS[payload.Fx] or Color3.new(1, 1, 1)
 		for _, point in payload.Points or {} do
@@ -158,6 +162,9 @@ function Fx:_onFx(kind: string, payload)
 		local pos = renderer and renderer:GetBeePosition(payload.Hive, payload.Slot)
 		if pos then
 			self:Popup(pos + Vector3.new(0, 1.5, 0), "Level " .. payload.Level .. "!", Color3.fromRGB(140, 255, 140))
+			if payload.Hive == player:GetAttribute("HiveIndex") then
+				C.Sound:Play("LevelUp", { Volume = 0.6 })
+			end
 		end
 	end
 end

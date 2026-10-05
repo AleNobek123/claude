@@ -57,7 +57,9 @@ DataService.Template = {
 	LastField = "Sunflower",
 	Daily = { LastDay = 0, Streak = 0 },
 	Stats = { PollenCollected = 0, MonstersDefeated = 0, EggsHatched = 0, EventsJoined = 0 },
-	Tutorial = { Done = false, Starter = false },
+	Tutorial = { Done = false, Starter = false, Step = 1 },
+	Settings = { Music = true, Sfx = true, Graphics = "High" },
+	Codes = {}, -- [CODE] = true
 }
 
 type Profile = {

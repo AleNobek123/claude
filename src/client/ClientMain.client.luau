@@ -8,8 +8,11 @@ local Controllers = script.Parent:WaitForChild("Controllers")
 local ORDER = {
 	"State",
 	"UI",
+	"Sound",
+	"Settings",
 	"HUD",
 	"Fx",
+	"BeeRenderer",
 	"Shop",
 	"Hive",
 	"Eggs",
@@ -17,9 +20,12 @@ local ORDER = {
 	"Codex",
 	"FieldRenderer",
 	"MonsterRenderer",
-	"BeeRenderer",
 	"Collector",
 	"Events",
+	"HoneyFx",
+	"HatchCutscene",
+	"Nests",
+	"Tutorial",
 }
 
 local loaded = {}

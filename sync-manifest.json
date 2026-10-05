@@ -4,6 +4,15 @@
    "path": [
     "ReplicatedStorage",
     "Shared",
+    "Assets"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/Assets.luau"
+  },
+  {
+   "path": [
+    "ReplicatedStorage",
+    "Shared",
     "BeeClass"
    ],
    "class": "ModuleScript",
@@ -324,10 +333,43 @@
     "StarterPlayerScripts",
     "Client",
     "Controllers",
+    "HatchCutscene"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/HatchCutscene.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
     "Hive"
    ],
    "class": "ModuleScript",
    "file": "src/client/Controllers/Hive.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "HoneyFx"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/HoneyFx.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Juice"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Juice.luau"
   },
   {
    "path": [
@@ -346,10 +388,43 @@
     "StarterPlayerScripts",
     "Client",
     "Controllers",
+    "Nests"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Nests.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Settings"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Settings.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
     "Shop"
    ],
    "class": "ModuleScript",
    "file": "src/client/Controllers/Shop.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Sound"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Sound.luau"
   },
   {
    "path": [
@@ -379,10 +454,32 @@
     "StarterPlayerScripts",
     "Client",
     "Controllers",
+    "Tutorial"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Tutorial.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
     "UI"
    ],
    "class": "ModuleScript",
    "file": "src/client/Controllers/UI.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Viewport"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Viewport.luau"
   }
  ]
 }

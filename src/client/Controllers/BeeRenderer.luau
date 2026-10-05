@@ -148,6 +148,16 @@ local function buildModel(def, mutation: string?)
 	return model, parts
 end
 
+-- Public builder (hive UI viewports, hatch cutscene); returns a ready model
+function BeeRenderer.Build(beeId: string, mutation: string?): Model?
+	local def = BeeData.Bees[beeId]
+	if not def then
+		return nil
+	end
+	local model = buildModel(def, mutation)
+	return model
+end
+
 -- Swarm management --------------------------------------------------------------------------------
 
 local function ownerRoot(swarm): BasePart?

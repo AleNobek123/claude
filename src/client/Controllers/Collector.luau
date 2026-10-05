@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
@@ -77,6 +78,44 @@ function Collector:_swing(cooldown: number)
 	end)
 end
 
+-- Petals and glowing dust fly from the harvested flowers into the collector
+function Collector:_harvestFx(center: Vector3, radius: number)
+	local renderer = C.FieldRenderer
+	local head = tool and (tool:FindFirstChild("Head") or tool:FindFirstChild("Handle"))
+	if not renderer or not head then
+		return
+	end
+	local low = C.Settings and C.Settings:Low()
+	local flowers = renderer:FlowersNear(center, radius + 2, low and 4 or 10)
+	for i, flower in flowers do
+		task.delay(i * 0.02, function()
+			local petal = Instance.new("Part")
+			petal.Size = Vector3.new(0.5, 0.08, 0.32)
+			petal.Color = flower.Color
+			petal.Material = Enum.Material.SmoothPlastic
+			petal.Anchored = true
+			petal.CanCollide = false
+			petal.CanQuery = false
+			petal.CastShadow = false
+			petal.CFrame = CFrame.new(flower.Position + Vector3.new(0, 0.6, 0)) * CFrame.Angles(math.random() * 6, math.random() * 6, 0)
+			petal.Parent = Workspace
+			local spin = CFrame.Angles(math.random() * 8, math.random() * 8, 0)
+			local tween = TweenService:Create(petal, TweenInfo.new(0.38, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				CFrame = CFrame.new(head.Position) * spin,
+				Size = Vector3.new(0.1, 0.02, 0.06),
+			})
+			tween:Play()
+			tween.Completed:Once(function()
+				petal:Destroy()
+			end)
+		end)
+	end
+	if C.Fx and not low then
+		C.Fx:Burst(center, Color3.fromRGB(255, 240, 150), 8)
+	end
+	C.Sound:Play("Swish", { Vary = 0.25, Volume = 0.8 })
+end
+
 function Collector:Init(controllers)
 	C = controllers
 end
@@ -126,9 +165,11 @@ function Collector:Start()
 			collect:FireServer()
 			local look = root.CFrame.LookVector
 			local center = root.Position + Vector3.new(look.X, 0, look.Z) * math.max(2, def.Radius * 0.6)
+			local ground = Vector3.new(center.X, field.Center.Y, center.Z)
 			if C.Fx then
-				C.Fx:Ring(Vector3.new(center.X, field.Center.Y, center.Z), def.Radius, Color3.fromRGB(255, 255, 220), 0.35)
+				C.Fx:Ring(ground, def.Radius, Color3.fromRGB(255, 255, 220), 0.35)
 			end
+			self:_harvestFx(ground, def.Radius)
 		end
 	end)
 end

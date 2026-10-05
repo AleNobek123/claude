@@ -1,12 +1,15 @@
 --[[
 	FieldRenderer
-	Resizes flowers locally from the server's tile levels, tints the event field and
-	opens field gates on this client when the player meets the requirement (the server
-	checks access again on every harvest).
+	Flowers follow the server's tile levels with smooth motion: harvested flowers dip and
+	wobble, then regrow gradually. Also tints the event field, exposes nearby flowers for
+	harvest particles, and opens the stone gates on this client once you qualify
+	(the server re-checks access on every harvest).
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -19,7 +22,9 @@ local FieldRenderer = {}
 
 local C
 local LEVEL_STEPS = 20
-local tiles = {} -- [fieldId] = { [index] = { Parts = { {Part, CFrame, Size} }, Color } }
+local tiles = {} -- [fieldId] = { [index] = entry }
+local animating = {} -- [entry] = true
+local gatesOpen = {} -- [fieldId] = boolean
 local GOLD = Color3.fromRGB(255, 205, 60)
 
 local function collect()
@@ -39,7 +44,15 @@ local function collect()
 					if index then
 						local entry = byTile[index]
 						if not entry then
-							entry = { Parts = {}, Color = part:GetAttribute("FlowerColor"), Ground = def.Center.Y }
+							entry = {
+								Parts = {},
+								Color = part:GetAttribute("FlowerColor"),
+								Ground = def.Center.Y,
+								Scale = 1,
+								Target = 1,
+								Wobble = 0,
+								Position = Vector3.new(part.Position.X, def.Center.Y, part.Position.Z),
+							}
 							byTile[index] = entry
 						end
 						table.insert(entry.Parts, {
@@ -57,15 +70,44 @@ local function collect()
 	end
 end
 
--- shrink each flower part and lower it towards the ground in proportion to the level
-local function applyLevel(entry, q: number)
-	local level = q / LEVEL_STEPS
-	local s = 0.3 + 0.7 * level
+local function levelScale(q: number): number
+	return 0.3 + 0.7 * (q / LEVEL_STEPS)
+end
+
+local function setTarget(entry, q: number)
+	local target = levelScale(q)
+	if target < entry.Target - 0.01 then
+		entry.Wobble = 1 -- harvested: dip and wobble
+	end
+	entry.Target = target
+	animating[entry] = true
+end
+
+local function applyEntry(entry, t: number)
+	local s = entry.Scale
+	local tilt = entry.Wobble > 0 and math.sin(t * 28) * 0.35 * entry.Wobble or 0
 	for _, p in entry.Parts do
 		local height = p.CFrame.Position.Y - entry.Ground
 		p.Part.Size = p.Size * s
-		p.Part.CFrame = p.CFrame + Vector3.new(0, height * (s - 1), 0)
+		p.Part.CFrame = (p.CFrame + Vector3.new(0, height * (s - 1), 0)) * CFrame.Angles(tilt, 0, tilt * 0.6)
 	end
+end
+
+-- Flowers near a point (for harvest particles): returns { Position, Color }
+function FieldRenderer:FlowersNear(position: Vector3, radius: number, max: number)
+	local out = {}
+	for _, byTile in tiles do
+		for _, entry in byTile do
+			local d = entry.Position - position
+			if d.X * d.X + d.Z * d.Z <= radius * radius then
+				table.insert(out, { Position = entry.Parts[1] and entry.Parts[1].Part.Position or entry.Position, Color = Config.FlowerColors[entry.Color] or Color3.new(1, 1, 1) })
+				if #out >= max then
+					return out
+				end
+			end
+		end
+	end
+	return out
 end
 
 function FieldRenderer:_tint()
@@ -84,6 +126,7 @@ function FieldRenderer:_tint()
 	end
 end
 
+-- Stone gates: the boulders sink into the ground when the gate opens for you
 function FieldRenderer:_gates()
 	local map = Workspace:FindFirstChild("Map")
 	local gates = map and map:FindFirstChild("Gates")
@@ -103,10 +146,36 @@ function FieldRenderer:_gates()
 			else
 				open = bees >= def.BeesRequired
 			end
-			for _, wall in gate:GetDescendants() do
-				if wall:IsA("BasePart") then
-					wall.CanCollide = not open
-					wall.Transparency = open and 1 or 0.55
+			if gatesOpen[def.Id] ~= open then
+				local first = gatesOpen[def.Id] == nil
+				gatesOpen[def.Id] = open
+				for _, part in gate:GetDescendants() do
+					if part:IsA("BasePart") and (part.Name == "Boulders" or part:GetAttribute("Barrier")) then
+						local home = part:GetAttribute("HomeCFrame")
+						if not home then
+							home = part.CFrame
+							part:SetAttribute("HomeCFrame", home)
+						end
+						local goal = open and (home - Vector3.new(0, part.Size.Y + 2, 0)) or home
+						part.CanCollide = not open
+						if first then
+							part.CFrame = goal
+							part.Transparency = open and 1 or 0
+						else
+							TweenService:Create(part, TweenInfo.new(1.4, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), { CFrame = goal }):Play()
+							TweenService:Create(part, TweenInfo.new(1.4), { Transparency = open and 1 or 0 }):Play()
+							if open then
+								C.Sound:Play("Rumble", { At = part.Position })
+							end
+						end
+					end
+				end
+				local label = gate:FindFirstChild("Requirement", true)
+				if label and label:IsA("TextLabel") then
+					label.TextColor3 = open and Color3.fromRGB(140, 255, 140) or Color3.new(1, 1, 1)
+				end
+				if open and not first and C.UI then
+					C.UI:Toast(`{def.Name} unlocked!`, "rare")
 				end
 			end
 		end
@@ -129,7 +198,9 @@ function FieldRenderer:Start()
 			if byTile then
 				for index, entry in byTile do
 					if index - 1 < buffer.len(buf) then
-						applyLevel(entry, buffer.readu8(buf, index - 1))
+						local s = levelScale(buffer.readu8(buf, index - 1))
+						entry.Scale, entry.Target = s, s
+						applyEntry(entry, 0)
 					end
 				end
 			end
@@ -144,7 +215,24 @@ function FieldRenderer:Start()
 		for o = 0, buffer.len(buf) - 3, 3 do
 			local entry = byTile[buffer.readu16(buf, o)]
 			if entry then
-				applyLevel(entry, buffer.readu8(buf, o + 2))
+				setTarget(entry, buffer.readu8(buf, o + 2))
+			end
+		end
+	end)
+
+	-- smooth motion: dip fast, regrow slowly, wobble decays
+	RunService.Heartbeat:Connect(function(dt)
+		local t = os.clock()
+		for entry in animating do
+			local diff = entry.Target - entry.Scale
+			local speed = diff < 0 and 10 or 1.6
+			entry.Scale += diff * math.min(1, dt * speed)
+			entry.Wobble = math.max(0, entry.Wobble - dt * 2.2)
+			applyEntry(entry, t)
+			if math.abs(diff) < 0.003 and entry.Wobble <= 0 then
+				entry.Scale = entry.Target
+				applyEntry(entry, t)
+				animating[entry] = nil
 			end
 		end
 	end)

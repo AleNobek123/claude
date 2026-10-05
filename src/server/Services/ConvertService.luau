@@ -91,7 +91,12 @@ function ConvertService:BeeConvert(player: Player, bee, cellPosition: Vector3?)
 	if not converting[player] then
 		return 0
 	end
-	return self:_convert(player, bee.Stats.Convert * speedMult(player))
+	local honey = self:_convert(player, bee.Stats.Convert * speedMult(player))
+	if honey > 0 then
+		-- everyone sees the honey orb pop into that cell
+		Notify.Fx("HoneyOrb", { Hive = S.HiveService:GetHiveIndex(player), Slot = bee.Slot })
+	end
+	return honey
 end
 
 function ConvertService:ConvertAll(player: Player): number

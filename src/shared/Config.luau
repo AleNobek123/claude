@@ -45,8 +45,8 @@ Config.Fields = {
 		BeesRequired = 0,
 		Multiplier = 1,
 		Flowers = { "White" },
-		Center = Vector3.new(0, 0, 110),
-		Tiles = 12,
+		Center = Vector3.new(0, 0, 120),
+		Tiles = 16,
 		Ground = Color3.fromRGB(124, 186, 82),
 	},
 	{
@@ -55,8 +55,8 @@ Config.Fields = {
 		BeesRequired = 5,
 		Multiplier = 1.5,
 		Flowers = { "White", "Blue", "Red" },
-		Center = Vector3.new(-125, 0, 125),
-		Tiles = 12,
+		Center = Vector3.new(-150, 14, 140),
+		Tiles = 16,
 		Ground = Color3.fromRGB(98, 170, 92),
 	},
 	{
@@ -65,8 +65,8 @@ Config.Fields = {
 		BeesRequired = 10,
 		Multiplier = 2.5,
 		Flowers = { "Red" },
-		Center = Vector3.new(125, 0, 125),
-		Tiles = 12,
+		Center = Vector3.new(150, 14, 140),
+		Tiles = 16,
 		Ground = Color3.fromRGB(136, 160, 74),
 	},
 	{
@@ -75,8 +75,8 @@ Config.Fields = {
 		BeesRequired = 15,
 		Multiplier = 4,
 		Flowers = { "Blue" },
-		Center = Vector3.new(-125, 0, 250),
-		Tiles = 12,
+		Center = Vector3.new(-150, 30, 300),
+		Tiles = 16,
 		Ground = Color3.fromRGB(82, 150, 110),
 	},
 	{
@@ -85,8 +85,8 @@ Config.Fields = {
 		BeesRequired = 25,
 		Multiplier = 8,
 		Flowers = { "White", "Blue", "Red" },
-		Center = Vector3.new(125, 0, 250),
-		Tiles = 12,
+		Center = Vector3.new(150, 40, 310),
+		Tiles = 16,
 		Ground = Color3.fromRGB(120, 150, 170),
 	},
 	{
@@ -95,8 +95,8 @@ Config.Fields = {
 		BeesRequired = 0,
 		Multiplier = 6,
 		Flowers = { "White" },
-		Center = Vector3.new(0, 0, 262),
-		Tiles = 10,
+		Center = Vector3.new(0, 22, 300),
+		Tiles = 12,
 		Ground = Color3.fromRGB(170, 150, 80),
 		VIP = true,
 	},
@@ -243,6 +243,31 @@ Config.EventInfo = {
 	AphidInvasion = { Name = "Aphid Invasion", Color = Color3.fromRGB(110, 210, 80) },
 	GoldenBloom = { Name = "Golden Bloom", Color = Color3.fromRGB(255, 205, 60) },
 	HoneyRain = { Name = "Honey Rain", Color = Color3.fromRGB(255, 170, 30) },
+}
+
+-- World: nests, codes, tutorial -----------------------------------------------------------
+
+-- Physical egg nests on the plaza between spawn and the hives
+Config.Nests = {
+	{ Egg = "Basic", Position = Vector3.new(-34, 0, -44) },
+	{ Egg = "Silver", Position = Vector3.new(0, 0, -50) },
+	{ Egg = "Royal", Position = Vector3.new(34, 0, -44) },
+}
+Config.NestRange = 22
+
+-- Promo codes (case-insensitive), each redeemable once per player
+Config.Codes = {
+	BEES = { Honey = 2500 },
+	HONEY = { Treats = 15 },
+	BUZZ = { Eggs = { Basic = 2 } },
+	LAUNCH = { Eggs = { Silver = 1 } },
+}
+
+Config.Tutorial = {
+	{ Id = "Field", Text = "Fly to Sunflower Meadow" },
+	{ Id = "Collect", Text = "Hold click to collect pollen" },
+	{ Id = "Convert", Text = "Return to your hive and make honey" },
+	{ Id = "Hatch", Text = "Hatch an egg at the Golden Nest" },
 }
 
 -- Daily login streak ---------------------------------------------------------------------
