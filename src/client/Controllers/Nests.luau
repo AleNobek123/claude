@@ -41,12 +41,27 @@ function Nests:_card(model: Model, eggId: string)
 	local anchor = model:FindFirstChild("CardAnchor") or model.PrimaryPart
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "NestCard"
-	gui.Size = UDim2.fromOffset(240, 110)
+	-- sized in studs so the card shrinks with distance instead of covering the HUD up close
+	gui.Size = UDim2.fromScale(9, 4.1)
 	gui.StudsOffset = Vector3.new(0, 9, 0)
-	gui.MaxDistance = 90
+	gui.MaxDistance = 110
 	gui.LightInfluence = 0
 	gui.Parent = anchor
-	local card = UI.Glass({ Size = UDim2.fromScale(1, 1), Transparency = 0.12, Radius = 24, Parent = gui })
+	local card = UI.Glass({
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(240, 110),
+		Transparency = 0.12,
+		Radius = 24,
+		Parent = gui,
+	})
+	local fit = Instance.new("UIScale")
+	fit.Parent = card
+	local function refit()
+		fit.Scale = math.max(gui.AbsoluteSize.X / 240, 0.01)
+	end
+	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(refit)
+	refit()
 	UI.Icon("Egg", { Position = UDim2.fromOffset(10, 14), Size = UDim2.fromOffset(70, 70), ImageColor3 = egg.Color:Lerp(Color3.new(1, 1, 1), 0.2), Parent = card })
 	UI.Label({ Text = egg.Name, Position = UDim2.fromOffset(88, 10), Size = UDim2.new(1, -96, 0, 34), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 26, Parent = card })
 	UI.Icon("Honey", { Position = UDim2.fromOffset(86, 52), Size = UDim2.fromOffset(34, 34), Parent = card })
