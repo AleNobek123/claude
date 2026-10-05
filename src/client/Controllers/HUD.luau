@@ -68,7 +68,7 @@ function HUD:_build()
 	-- pollen bar
 	local bar, fill, text = UI.Bar({
 		Size = UDim2.fromOffset(420, 34),
-		Position = UDim2.new(0.5, 0, 1, -18),
+		Position = UDim2.new(0.5, 0, 1, -84), -- above the default tool hotbar
 		AnchorPoint = Vector2.new(0.5, 1),
 		Color = Color3.fromRGB(255, 226, 90),
 		MaxTextSize = 20,
@@ -123,7 +123,7 @@ function HUD:_build()
 	self.Boosts = UI.Label({
 		Name = "Boosts",
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -58),
+		Position = UDim2.new(0.5, 0, 1, -124),
 		Size = UDim2.fromOffset(420, 22),
 		TextColor3 = Color3.fromRGB(255, 240, 160),
 		TextStrokeTransparency = 0.3,

@@ -224,7 +224,7 @@ function Hive:_renderDetail(data)
 		bee:SetModifiers(synergy.BeeMods[selected])
 		local stats = bee.Stats
 		local rarity = Config.Rarities[def.Rarity]
-		line(def.Name, { Font = UI.Font, Max = 28, Height = 34, Color = rarity.Color:Lerp(Color3.new(0, 0, 0), 0.25) })
+		line(def.Name, { Font = UI.Font, Max = 28, Height = 34, Color = rarity.Color:Lerp(Color3.new(0, 0, 0), 0.45) })
 		line(`{def.Rarity}{record.Mutation and (" • " .. record.Mutation) or ""} • {def.Color} • {table.concat(def.Tags, ", ")}`, {
 			Color = UI.Colors.Muted,
 		})
