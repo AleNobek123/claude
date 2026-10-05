@@ -1,0 +1,284 @@
+--[[
+	EggService
+	Buying and hatching eggs (gacha with published odds + pity), feeding treats and
+	using Mutation Serums.
+
+	Pity: each egg type counts hatches since the last Legendary+. From 75% of the hard
+	threshold the Legendary+ chance rises linearly to 100% at the threshold.
+]]
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Config = require(Shared.Config)
+local BeeData = require(Shared.BeeData)
+local BeeClass = require(Shared.BeeClass)
+local Net = require(Shared.Net)
+local Notify = require(script.Parent.Parent.Util.Notify)
+
+local EggService = {}
+EggService.Name = "EggService"
+
+local S
+local rng = Random.new()
+
+-- Prices ---------------------------------------------------------------------------------
+
+function EggService:Price(eggId: string, data): number?
+	local egg = Config.Eggs[eggId]
+	if not egg then
+		return nil
+	end
+	if egg.BasePrice then
+		local bees = S.HiveService:CountBees(data)
+		return math.floor(egg.BasePrice * egg.Growth ^ bees)
+	end
+	return egg.HoneyPrice
+end
+
+-- Rolls ------------------------------------------------------------------------------------
+
+local function weightedPick(weights: { [string]: number }, order: { string }): string
+	local total = 0
+	for _, key in order do
+		total += weights[key] or 0
+	end
+	local roll = rng:NextNumber() * total
+	for _, key in order do
+		roll -= weights[key] or 0
+		if roll <= 0 and (weights[key] or 0) > 0 then
+			return key
+		end
+	end
+	for i = #order, 1, -1 do
+		if (weights[order[i]] or 0) > 0 then
+			return order[i]
+		end
+	end
+	return order[1]
+end
+
+-- Returns rarity and whether pity forced it. `count` = hatches since last Legendary+, including this one.
+function EggService:RollRarity(eggId: string, count: number): (string, boolean)
+	local egg = Config.Eggs[eggId]
+	local odds = egg.Odds
+	local high = (odds.Legendary + odds.Mythic) / 100
+	local hard = egg.Pity
+	local softStart = math.floor(hard * Config.SoftPityStart)
+
+	local forced = false
+	if count >= hard then
+		forced = true
+	elseif count > softStart then
+		local boosted = high + (1 - high) * (count - softStart) / (hard - softStart)
+		forced = rng:NextNumber() < boosted
+	end
+
+	if forced then
+		local weights = { Legendary = odds.Legendary, Mythic = odds.Mythic }
+		if weights.Legendary + weights.Mythic <= 0 then
+			weights.Legendary = 1
+		end
+		return weightedPick(weights, { "Legendary", "Mythic" }), true
+	end
+	return weightedPick(odds, Config.RarityOrder), false
+end
+
+-- Remotes ----------------------------------------------------------------------------------
+
+function EggService:_buy(player: Player, eggId: string)
+	local data = S.DataService:Get(player)
+	if not data or typeof(eggId) ~= "string" then
+		return
+	end
+	local price = self:Price(eggId, data)
+	if not price then
+		return
+	end
+	if not S.DataService:SpendHoney(player, price) then
+		Notify.Player(player, "Not enough honey.", "bad")
+		return
+	end
+	data.Eggs[eggId] = (data.Eggs[eggId] or 0) + 1
+	S.DataService:MarkDirty(player, "Eggs")
+	Notify.Player(player, `Bought a {Config.Eggs[eggId].Name}! Hatch it in your hive.`, "good")
+end
+
+function EggService:_hatch(player: Player, eggId: string, slot: number)
+	local data = S.DataService:Get(player)
+	if not data or typeof(eggId) ~= "string" or typeof(slot) ~= "number" then
+		return
+	end
+	slot = math.floor(slot)
+	local egg = Config.Eggs[eggId]
+	if not egg or (data.Eggs[eggId] or 0) <= 0 then
+		Notify.Player(player, "You don't have that egg.", "bad")
+		return
+	end
+	if slot < 1 or slot > S.HiveService:GetUnlockedSlots(player) then
+		Notify.Player(player, "That hive slot is locked.", "bad")
+		return
+	end
+	local key = tostring(slot)
+	if data.Bees[key] then
+		Notify.Player(player, "Pick an empty hive slot.", "bad")
+		return
+	end
+
+	data.Eggs[eggId] -= 1
+	local count = (data.Pity[eggId] or 0) + 1
+	local rarity, forced = self:RollRarity(eggId, count)
+	local pool = BeeData.ByRarity[rarity]
+	local beeId = pool[rng:NextInteger(1, #pool)]
+	local mutation = BeeClass.RollMutation(rng, false)
+	local record = BeeClass.NewRecord(beeId, mutation)
+
+	local order = Config.Rarities[rarity].Order
+	data.Pity[eggId] = order >= Config.Rarities.Legendary.Order and 0 or count
+	local isNew = not data.Codex[beeId]
+	data.Bees[key] = record
+	data.Codex[beeId] = true
+	data.Stats.EggsHatched += 1
+	S.DataService:MarkDirty(player, "Eggs", "Pity", "Bees", "Codex")
+
+	S.BeeService:RebuildSwarm(player)
+	S.HiveService:RefreshCells(player)
+
+	self.HatchResult:FireClient(player, {
+		Slot = slot,
+		Record = record,
+		Egg = eggId,
+		Pity = forced,
+		New = isNew,
+	})
+	if order >= Config.Rarities.Legendary.Order or mutation == "Shadow" then
+		local def = BeeData.Bees[beeId]
+		local label = (mutation and (mutation .. " ") or "") .. def.Name
+		Notify.All(`{player.DisplayName} hatched a {rarity} {label}!`, "rare")
+	end
+end
+
+function EggService:_feed(player: Player, slot: number, count: number)
+	local data = S.DataService:Get(player)
+	if not data or typeof(slot) ~= "number" or typeof(count) ~= "number" then
+		return
+	end
+	count = math.clamp(math.floor(count), 1, 100)
+	local record = data.Bees[tostring(math.floor(slot))]
+	if not record then
+		return
+	end
+	if record.Level >= Config.Levels.Max then
+		Notify.Player(player, "This bee is already max level.", "info")
+		return
+	end
+	count = math.min(count, data.Treats)
+	if count <= 0 then
+		Notify.Player(player, "No treats left. Buy some in the shop.", "bad")
+		return
+	end
+	data.Treats -= count
+	local swarm = S.BeeService:GetSwarm(player)
+	local bee = swarm and swarm.Bees[math.floor(slot)]
+	local gained
+	if bee then
+		gained = bee:AddXP(count * Config.Levels.TreatXP)
+	else
+		local temp = BeeClass.new(math.floor(slot), record, player)
+		gained = temp:AddXP(count * Config.Levels.TreatXP)
+	end
+	S.DataService:MarkDirty(player, "Treats", "Bees")
+	if gained > 0 then
+		Notify.Player(player, `{BeeData.Bees[record.Id].Name} reached level {record.Level}!`, "good")
+		S.BeeService:RebuildSwarm(player)
+		S.HiveService:RefreshCells(player)
+	end
+end
+
+function EggService:_useSerum(player: Player, slot: number)
+	local data = S.DataService:Get(player)
+	if not data or typeof(slot) ~= "number" then
+		return
+	end
+	local record = data.Bees[tostring(math.floor(slot))]
+	if not record then
+		return
+	end
+	if data.Serums <= 0 then
+		Notify.Player(player, "You have no Mutation Serum.", "bad")
+		return
+	end
+	local current = record.Mutation and Config.Mutations[record.Mutation]
+	if current and current.Order >= #Config.MutationOrder then
+		Notify.Player(player, "This bee already has the rarest mutation.", "info")
+		return
+	end
+	data.Serums -= 1
+	local rolled = BeeClass.RollMutation(rng, true)
+	local rolledDef = Config.Mutations[rolled]
+	if not current or rolledDef.Order > current.Order then
+		record.Mutation = rolled
+		Notify.Player(player, `Mutation: {rolled}!`, "rare")
+	else
+		Notify.Player(player, `Rolled {rolled}, kept {record.Mutation} (serums never downgrade).`, "info")
+	end
+	S.DataService:MarkDirty(player, "Serums", "Bees")
+	S.BeeService:RebuildSwarm(player)
+	S.HiveService:RefreshCells(player)
+end
+
+function EggService:_buySerum(player: Player)
+	local data = S.DataService:Get(player)
+	if not data then
+		return
+	end
+	if not S.DataService:SpendHoney(player, Config.SerumHoneyPrice) then
+		Notify.Player(player, "Not enough honey.", "bad")
+		return
+	end
+	data.Serums += 1
+	S.DataService:MarkDirty(player, "Serums")
+	Notify.Player(player, "Bought a Mutation Serum!", "good")
+end
+
+function EggService:Init(services)
+	S = services
+	self.BuyEgg = Net.Event("BuyEgg")
+	self.HatchEgg = Net.Event("HatchEgg")
+	self.HatchResult = Net.Event("HatchResult")
+	self.FeedBee = Net.Event("FeedBee")
+	self.UseSerum = Net.Event("UseSerum")
+	self.BuySerum = Net.Event("BuySerum")
+end
+
+function EggService:Start()
+	self.BuyEgg.OnServerEvent:Connect(function(player, eggId)
+		if Net.Allow(player, "BuyEgg", 0.25) then
+			self:_buy(player, eggId)
+		end
+	end)
+	self.HatchEgg.OnServerEvent:Connect(function(player, eggId, slot)
+		if Net.Allow(player, "HatchEgg", 0.4) then
+			self:_hatch(player, eggId, slot)
+		end
+	end)
+	self.FeedBee.OnServerEvent:Connect(function(player, slot, count)
+		if Net.Allow(player, "FeedBee", 0.2) then
+			self:_feed(player, slot, count)
+		end
+	end)
+	self.UseSerum.OnServerEvent:Connect(function(player, slot)
+		if Net.Allow(player, "UseSerum", 0.5) then
+			self:_useSerum(player, slot)
+		end
+	end)
+	self.BuySerum.OnServerEvent:Connect(function(player)
+		if Net.Allow(player, "BuySerum", 0.5) then
+			self:_buySerum(player)
+		end
+	end)
+	Players.PlayerRemoving:Connect(function() end)
+end
+
+return EggService

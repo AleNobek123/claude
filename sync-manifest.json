@@ -1,0 +1,388 @@
+{
+ "files": [
+  {
+   "path": [
+    "ReplicatedStorage",
+    "Shared",
+    "BeeClass"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/BeeClass.luau"
+  },
+  {
+   "path": [
+    "ReplicatedStorage",
+    "Shared",
+    "BeeCodec"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/BeeCodec.luau"
+  },
+  {
+   "path": [
+    "ReplicatedStorage",
+    "Shared",
+    "BeeData"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/BeeData.luau"
+  },
+  {
+   "path": [
+    "ReplicatedStorage",
+    "Shared",
+    "Config"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/Config.luau"
+  },
+  {
+   "path": [
+    "ReplicatedStorage",
+    "Shared",
+    "Format"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/Format.luau"
+  },
+  {
+   "path": [
+    "ReplicatedStorage",
+    "Shared",
+    "HexGrid"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/HexGrid.luau"
+  },
+  {
+   "path": [
+    "ReplicatedStorage",
+    "Shared",
+    "Net"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/Net.luau"
+  },
+  {
+   "path": [
+    "ReplicatedStorage",
+    "Shared",
+    "Signal"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/Signal.luau"
+  },
+  {
+   "path": [
+    "ReplicatedStorage",
+    "Shared",
+    "Synergy"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/Synergy.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Main"
+   ],
+   "class": "Script",
+   "file": "src/server/Main.server.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Services",
+    "BeeService"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Services/BeeService.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Services",
+    "ConvertService"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Services/ConvertService.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Services",
+    "DataService"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Services/DataService.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Services",
+    "EggService"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Services/EggService.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Services",
+    "EventService"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Services/EventService.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Services",
+    "FieldService"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Services/FieldService.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Services",
+    "HiveService"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Services/HiveService.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Services",
+    "LeaderboardService"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Services/LeaderboardService.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Services",
+    "MonetizationService"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Services/MonetizationService.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Services",
+    "MonsterService"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Services/MonsterService.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Services",
+    "RewardService"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Services/RewardService.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Services",
+    "ShopService"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Services/ShopService.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Util",
+    "Notify"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Util/Notify.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "ClientMain"
+   ],
+   "class": "LocalScript",
+   "file": "src/client/ClientMain.client.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "BeeRenderer"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/BeeRenderer.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Codex"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Codex.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Collector"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Collector.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Eggs"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Eggs.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Events"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Events.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "FieldRenderer"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/FieldRenderer.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Fx"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Fx.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "HUD"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/HUD.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Hive"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Hive.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "MonsterRenderer"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/MonsterRenderer.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Shop"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Shop.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "State"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/State.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Store"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Store.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "UI"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/UI.luau"
+  }
+ ]
+}
