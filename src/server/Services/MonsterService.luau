@@ -14,6 +14,7 @@ local Workspace = game:GetService("Workspace")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
 local Net = require(Shared.Net)
+local Signal = require(Shared.Signal)
 local Notify = require(script.Parent.Parent.Util.Notify)
 
 local MonsterService = {}
@@ -27,8 +28,8 @@ local monsters = {} -- [id] = monster
 local nextId = 1
 local lastSpawn = {} -- [fieldId] = os.clock()
 local rng = Random.new()
-local killedEvent = Instance.new("BindableEvent")
-MonsterService.Killed = killedEvent.Event -- (monster, killer)
+local killedEvent = Signal.new()
+MonsterService.Killed = killedEvent -- (monster, killer)
 
 local function serverNow(): number
 	return Workspace:GetServerTimeNow()

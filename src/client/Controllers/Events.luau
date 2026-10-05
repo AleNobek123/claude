@@ -53,7 +53,7 @@ function Events:_build()
 end
 
 function Events:_refresh()
-	if not state or not banner then
+	if not state or not banner or not state.StartsAt or not state.EndsAt then
 		return
 	end
 	local now = Workspace:GetServerTimeNow()

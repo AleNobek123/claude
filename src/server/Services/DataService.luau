@@ -25,6 +25,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
 local Net = require(Shared.Net)
+local Signal = require(Shared.Signal)
 
 local STORE_NAME = "BeeTycoon_Players_v1"
 local AUTOSAVE_INTERVAL = 60
@@ -72,13 +73,14 @@ local dirty: { [Player]: { [string]: boolean } } = {}
 local store
 local usingMock = false
 
-local loadedEvent = Instance.new("BindableEvent")
-local releasingEvent = Instance.new("BindableEvent")
-local honeyEarnedEvent = Instance.new("BindableEvent")
+-- Signals (not BindableEvents: those would deep-copy the profile table)
+local loadedEvent = Signal.new()
+local releasingEvent = Signal.new()
+local honeyEarnedEvent = Signal.new()
 
-DataService.ProfileLoaded = loadedEvent.Event -- (player, data)
-DataService.ProfileReleasing = releasingEvent.Event -- (player, data)
-DataService.HoneyEarned = honeyEarnedEvent.Event -- (player, amount)
+DataService.ProfileLoaded = loadedEvent -- (player, data)
+DataService.ProfileReleasing = releasingEvent -- (player, data)
+DataService.HoneyEarned = honeyEarnedEvent -- (player, amount)
 
 -- Utilities -------------------------------------------------------------------------
 
