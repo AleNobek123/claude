@@ -35,16 +35,35 @@ local function tween(obj, time, goals, style, direction)
 	return t
 end
 
+local frozen: BasePart? = nil
+
+-- Lock movement while the camera is scripted. PlayerModule is optional (custom player scripts
+-- may not have it), so the root part is anchored as well.
 local function controls(enabled: boolean)
-	local ok, module = pcall(function()
-		return require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
-	end)
-	if ok and module then
-		local c = module:GetControls()
-		if enabled then
-			c:Enable()
-		else
-			c:Disable()
+	local scripts = player:FindFirstChild("PlayerScripts")
+	local moduleScript = scripts and scripts:FindFirstChild("PlayerModule")
+	if moduleScript then
+		local ok, module = pcall(require, moduleScript)
+		if ok and type(module) == "table" and module.GetControls then
+			local c = module:GetControls()
+			if enabled then
+				c:Enable()
+			else
+				c:Disable()
+			end
+		end
+	end
+	if enabled then
+		if frozen then
+			frozen.Anchored = false
+			frozen = nil
+		end
+	else
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		if root and not root.Anchored then
+			root.AssemblyLinearVelocity = Vector3.zero
+			root.Anchored = true
+			frozen = root
 		end
 	end
 end
@@ -176,10 +195,32 @@ function HatchCutscene:Play(result)
 		return
 	end
 	playing = true
+	local ok, err = pcall(self._run, self, result)
+	if not ok then
+		-- never leave the player stuck in a broken cutscene
+		warn("[HatchCutscene] " .. tostring(err))
+		local stage = Workspace:FindFirstChild("HatchStage")
+		if stage then
+			stage:Destroy()
+		end
+		local gui = player.PlayerGui:FindFirstChild("Cutscene")
+		if gui then
+			gui:Destroy()
+		end
+		Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+		controls(true)
+		UI:_screen().Enabled = true
+	end
+	playing = false
+	if #queue > 0 then
+		self:Play(table.remove(queue, 1))
+	end
+end
+
+function HatchCutscene:_run(result)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if not root then
-		playing = false
 		return
 	end
 	local camera = Workspace.CurrentCamera
@@ -400,10 +441,6 @@ function HatchCutscene:Play(result)
 	letterbox(false, screen)
 	tween(fade, 0.35, { BackgroundTransparency = 1 }).Completed:Wait()
 	screen:Destroy()
-	playing = false
-	if #queue > 0 then
-		self:Play(table.remove(queue, 1))
-	end
 end
 
 function HatchCutscene:Init(controllers)

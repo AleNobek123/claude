@@ -7,10 +7,12 @@
 	  bottom-right Make Honey button near your hive
 ]]
 
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -81,10 +83,11 @@ function HUD:_build()
 	local stats = UI.Create("Frame", {
 		Name = "Stats",
 		Position = UDim2.fromOffset(18, 14),
-		Size = UDim2.fromOffset(220, 180),
+		Size = UDim2.fromOffset(220, 170),
 		BackgroundTransparency = 1,
 		Parent = screen,
-	}, { UI.List(10) })
+	}, { UI.List(10), UI.Create("UIScale", { Name = "Responsive" }) })
+	self.Stats = stats
 	stats.UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 	self.HoneyPill, self.HoneyLabel, self.HoneyIcon = pill(stats, 1, "Honey")
 	self.BeePill, self.BeeLabel = pill(stats, 2, "Bee")
@@ -94,12 +97,16 @@ function HUD:_build()
 	-- sidebar
 	local sidebar = UI.Create("Frame", {
 		Name = "Sidebar",
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 18, 0.56, 0),
-		Size = UDim2.fromOffset(70, 7 * 74),
+		Position = UDim2.fromOffset(18, 200),
+		Size = UDim2.fromOffset(64, #SIDEBAR * 72),
 		BackgroundTransparency = 1,
 		Parent = screen,
-	}, { UI.List(8) })
+	}, { UI.List(8), UI.Create("UIScale", { Name = "Responsive" }) })
+	sidebar.UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	pcall(function()
+		sidebar.UIListLayout.Wraps = true
+	end)
+	self.Sidebar = sidebar
 	for i, item in SIDEBAR do
 		local button = UI.IconButton(item.Icon, 64, {
 			Name = item.Name,
@@ -126,6 +133,7 @@ function HUD:_build()
 		BackgroundTransparency = 1,
 		Parent = screen,
 	}, { UI.Create("UISizeConstraint", { MaxSize = Vector2.new(460, 40), MinSize = Vector2.new(240, 40) }) })
+	self.PollenBar = barHolder
 	local bar, fill, text = UI.Bar({
 		Size = UDim2.new(1, -40, 1, -8),
 		Position = UDim2.new(0, 40, 0, 4),
@@ -170,6 +178,28 @@ function HUD:_build()
 	}, function()
 		Net.Event("ToggleConvert"):FireServer(not player:GetAttribute("Converting"))
 	end)
+end
+
+-- Fit the HUD to the viewport: scale clusters down on small screens, wrap the sidebar into
+-- columns, and keep the bottom-left (thumbstick) and bottom-right (jump) clear on touch devices.
+function HUD:_layout()
+	local viewport = Workspace.CurrentCamera.ViewportSize
+	local inset = GuiService:GetGuiInset()
+	local height = viewport.Y - inset.Y
+	local touch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	local scale = math.clamp(math.min(height / 760, viewport.X / 1200), 0.55, 1)
+	self.Stats.Responsive.Scale = scale
+	self.Sidebar.Responsive.Scale = scale
+	local top = 14 + 170 * scale + 14
+	self.Sidebar.Position = UDim2.fromOffset(18, top)
+	local bottom = touch and height * 0.62 or height - 16
+	local perColumn = math.max(1, math.floor(((bottom - top) / scale + 8) / 72))
+	local columns = math.ceil(#SIDEBAR / perColumn)
+	self.Sidebar.Size = UDim2.fromOffset(columns * 72 - 8, math.min(#SIDEBAR, perColumn) * 72)
+	self.PollenBar.Position = UDim2.new(0.5, 0, 1, touch and -24 or -86)
+	self.Boosts.Position = UDim2.new(0.5, 0, 1, touch and -72 or -134)
+	self.ConvertButton.Position = UDim2.new(1, -24, 1, touch and -150 - 60 * scale or -84)
+	self.ConvertButton.Size = UDim2.fromOffset(230 * scale, 66 * scale)
 end
 
 function HUD:_refresh(data)
@@ -292,6 +322,10 @@ end
 
 function HUD:Start()
 	self:_build()
+	self:_layout()
+	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+		self:_layout()
+	end)
 
 	C.State:OnChange({ "Honey", "Pollen", "Backpack", "Bees", "HiveSlots", "Eggs" }, function(data)
 		self:_refresh(data)

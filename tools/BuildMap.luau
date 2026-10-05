@@ -242,6 +242,8 @@ end
 
 local function buildTerrain()
 	Terrain:Clear()
+	-- clean low-poly look; decoration grass would also hide flowers, pads and the tutorial trail
+	Terrain.Decoration = false
 	Terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(116, 190, 82))
 	Terrain:SetMaterialColor(Enum.Material.Rock, Color3.fromRGB(150, 140, 128))
 	Terrain:SetMaterialColor(Enum.Material.Slate, Color3.fromRGB(132, 124, 116))
@@ -518,10 +520,10 @@ local function buildHive(index: number, hivesFolder)
 		Name = "Pad",
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(0.4, 10, 10),
-		CFrame = CFrame.new(x, 1.1, z + 12) * CFrame.Angles(0, 0, math.pi / 2),
+		CFrame = CFrame.new(x, 0.25, z + 12) * CFrame.Angles(0, 0, math.pi / 2),
 		Color = HONEY,
 		Material = Enum.Material.Neon,
-		Transparency = 0.2,
+		Transparency = 0.5,
 		CanCollide = false,
 		Parent = model,
 	})

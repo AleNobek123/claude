@@ -30,8 +30,8 @@ local step = 1
 local stepStart = { Honey = 0 }
 local temporary: { Until: number, Position: Vector3 }? = nil
 
-local DOT_SPACING = 5
-local MAX_DOTS = 40
+local DOT_SPACING = 5.5
+local MAX_DOTS = 70
 
 function Tutorial:Init(controllers)
 	C = controllers
@@ -178,22 +178,51 @@ rayParams.FilterType = Enum.RaycastFilterType.Exclude
 local trailPoints = {} -- ground positions, recomputed at 5 Hz
 local lastTrail = 0
 
+-- Follow the dirt roads between the hive row and the plaza instead of cutting across the pond
+local function route(from: Vector3, to: Vector3): { Vector3 }
+	local points = { from }
+	local function via(x: number, z: number)
+		table.insert(points, Vector3.new(x, from.Y, z))
+	end
+	if from.Z < -55 and to.Z > -30 then
+		if math.abs(from.X) > 20 then
+			via(0, -78)
+		end
+		via(0, -18)
+	elseif from.Z > -30 and to.Z < -55 then
+		via(0, -18)
+		if math.abs(to.X) > 20 then
+			via(0, -78)
+		end
+	end
+	table.insert(points, to)
+	return points
+end
+
 function Tutorial:_updateTrail(from: Vector3, to: Vector3)
 	local now = os.clock()
 	if now - lastTrail > 0.2 then
 		lastTrail = now
 		table.clear(trailPoints)
-		local flat = Vector3.new(to.X - from.X, 0, to.Z - from.Z)
-		local count = math.clamp(math.floor(flat.Magnitude / DOT_SPACING), 0, MAX_DOTS)
 		local exclude = { folder }
 		if player.Character then
 			table.insert(exclude, player.Character)
 		end
 		rayParams.FilterDescendantsInstances = exclude
-		for i = 1, count do
-			local p = from + flat.Unit * (i * DOT_SPACING)
-			local hit = Workspace:Raycast(p + Vector3.new(0, 60, 0), Vector3.new(0, -140, 0), rayParams)
-			trailPoints[i] = Vector3.new(p.X, (hit and hit.Position.Y or from.Y - 3) + 0.15, p.Z)
+		local points = route(from, to)
+		local carry = DOT_SPACING -- distance left until the next dot
+		for k = 1, #points - 1 do
+			local a, b = points[k], points[k + 1]
+			local flat = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
+			local length = flat.Magnitude
+			local d = carry
+			while d <= length and #trailPoints < MAX_DOTS do
+				local p = a + flat.Unit * d
+				local hit = Workspace:Raycast(p + Vector3.new(0, 60, 0), Vector3.new(0, -140, 0), rayParams)
+				table.insert(trailPoints, Vector3.new(p.X, (hit and hit.Position.Y or from.Y - 3) + 0.15, p.Z))
+				d += DOT_SPACING
+			end
+			carry = d - length
 		end
 	end
 	for i = 1, MAX_DOTS do
