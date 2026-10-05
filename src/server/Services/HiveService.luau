@@ -361,7 +361,7 @@ function HiveService:Start()
 		end
 	end)
 
-	S.DataService.ProfileLoaded:Connect(function(player)
+	S.DataService:OnLoaded(function(player)
 		self:_assign(player)
 		self:RefreshCells(player)
 		S.BeeService:RebuildSwarm(player)

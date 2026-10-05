@@ -88,7 +88,7 @@ function RewardService:Init(services)
 end
 
 function RewardService:Start()
-	S.DataService.ProfileLoaded:Connect(function(player, data)
+	S.DataService:OnLoaded(function(player, data)
 		self:_starter(player, data)
 		self:_daily(player, data)
 	end)

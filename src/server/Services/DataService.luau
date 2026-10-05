@@ -295,6 +295,15 @@ function DataService:WaitFor(player: Player, timeout: number?)
 	return self:Get(player)
 end
 
+-- Runs handler for profiles already loaded and every profile loaded later
+-- (services start after early joiners may already be loaded)
+function DataService:OnLoaded(handler)
+	for player, profile in profiles do
+		task.spawn(handler, player, profile.Data)
+	end
+	return loadedEvent:Connect(handler)
+end
+
 function DataService:IsMock(): boolean
 	return usingMock
 end
