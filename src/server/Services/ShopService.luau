@@ -134,7 +134,8 @@ function ShopService:GiveBackpack(player: Player)
 			end
 		end
 	end
-	main.CFrame = torso.CFrame * CFrame.new(0, 0.1, torso.Size.Z / 2 + main.Size.Z / 2)
+	local depth = model:GetExtentsSize().Z
+	model:PivotTo(torso.CFrame * CFrame.new(0, 0.1, torso.Size.Z / 2 + depth / 2 - 0.05))
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0 = torso
 	weld.Part1 = main

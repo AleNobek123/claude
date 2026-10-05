@@ -49,6 +49,27 @@ local function folder(name: string, parent: Instance)
 	return f
 end
 
+-- meshes from Blender (created by IntegrateAssets); nil while only placeholders exist
+local function raw(name: string): Model?
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local rawFolder = assets and assets:FindFirstChild("Raw")
+	return rawFolder and rawFolder:FindFirstChild(name)
+end
+
+-- clone the single mesh of a raw template, keeping its rest rotation relative to the root
+local function rawMesh(name: string)
+	local model = raw(name)
+	if not model or not model.PrimaryPart then
+		return nil
+	end
+	local mesh = model:FindFirstChildWhichIsA("MeshPart")
+	if not mesh then
+		return nil
+	end
+	local rel = model.PrimaryPart.CFrame:ToObjectSpace(mesh.CFrame)
+	return mesh, rel
+end
+
 local function label(parent: Instance, name: string, text: string, props)
 	local l = Instance.new("TextLabel")
 	l.Name = name
@@ -118,6 +139,8 @@ end
 
 -- Fields -------------------------------------------------------------------------------------
 
+local FLOWER_MESH = { White = "Flower_Daisy", Red = "Flower_Rose", Blue = "Flower_Bell" }
+
 local CENTER_COLORS = {
 	White = Color3.fromRGB(255, 196, 40),
 	Red = Color3.fromRGB(255, 225, 120),
@@ -162,28 +185,60 @@ local function buildField(def, fieldsFolder, gatesFolder)
 			local colorName = def.Flowers[rng:NextInteger(1, #def.Flowers)]
 			local pos = c + Vector3.new((gx - offset) * Config.Tiles.Size, 0, (gz - offset) * Config.Tiles.Size)
 			local jitter = Vector3.new(rng:NextNumber(-0.5, 0.5), 0, rng:NextNumber(-0.5, 0.5))
-			part({
-				Name = "P" .. index,
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(0.35, 3.1, 3.1),
-				CFrame = CFrame.new(pos + jitter + Vector3.new(0, 0.9, 0)) * CFrame.Angles(0, rng:NextNumber(0, math.pi), math.pi / 2),
-				Color = Config.FlowerColors[colorName],
-				CanCollide = false,
-				CastShadow = false,
-				Attributes = { Tile = index, FlowerColor = colorName, Petal = true },
-				Parent = flowers,
-			})
-			part({
-				Name = "C" .. index,
-				Shape = Enum.PartType.Ball,
-				Size = Vector3.new(1.1, 1.1, 1.1),
-				CFrame = CFrame.new(pos + jitter + Vector3.new(0, 1.15, 0)),
-				Color = CENTER_COLORS[colorName],
-				CanCollide = false,
-				CastShadow = false,
-				Attributes = { Tile = index, FlowerColor = colorName },
-				Parent = flowers,
-			})
+			local yaw = rng:NextNumber(0, math.pi * 2)
+			local petalMesh, petalRel = rawMesh(FLOWER_MESH[colorName])
+			local centerMesh, centerRel = rawMesh("Flower_Center")
+			if petalMesh and centerMesh then
+				local scale = 3.1 / math.max(petalMesh.Size.X, petalMesh.Size.Z)
+				local base = CFrame.new(pos + jitter + Vector3.new(0, 0.35, 0)) * CFrame.Angles(0, yaw, 0)
+				local petals = petalMesh:Clone()
+				petals.Name = "P" .. index
+				petals.Size = petalMesh.Size * scale
+				petals.CFrame = base * CFrame.new(petalRel.Position * scale) * petalRel.Rotation
+				petals.Color = Config.FlowerColors[colorName]
+				petals.Material = Enum.Material.SmoothPlastic
+				petals.Anchored = true
+				petals.CanCollide = false
+				petals.CastShadow = false
+				petals:SetAttribute("Tile", index)
+				petals:SetAttribute("FlowerColor", colorName)
+				petals:SetAttribute("Petal", true)
+				petals.Parent = flowers
+				local center = centerMesh:Clone()
+				center.Name = "C" .. index
+				center.Size = centerMesh.Size * scale
+				center.CFrame = base * CFrame.new(0, 0.12 * scale, 0) * CFrame.new(centerRel.Position * scale) * centerRel.Rotation
+				center.Color = CENTER_COLORS[colorName]
+				center.Anchored = true
+				center.CanCollide = false
+				center.CastShadow = false
+				center:SetAttribute("Tile", index)
+				center:SetAttribute("FlowerColor", colorName)
+				center.Parent = flowers
+			else
+				part({
+					Name = "P" .. index,
+					Shape = Enum.PartType.Cylinder,
+					Size = Vector3.new(0.35, 3.1, 3.1),
+					CFrame = CFrame.new(pos + jitter + Vector3.new(0, 0.9, 0)) * CFrame.Angles(0, yaw, math.pi / 2),
+					Color = Config.FlowerColors[colorName],
+					CanCollide = false,
+					CastShadow = false,
+					Attributes = { Tile = index, FlowerColor = colorName, Petal = true },
+					Parent = flowers,
+				})
+				part({
+					Name = "C" .. index,
+					Shape = Enum.PartType.Ball,
+					Size = Vector3.new(1.1, 1.1, 1.1),
+					CFrame = CFrame.new(pos + jitter + Vector3.new(0, 1.15, 0)),
+					Color = CENTER_COLORS[colorName],
+					CanCollide = false,
+					CastShadow = false,
+					Attributes = { Tile = index, FlowerColor = colorName },
+					Parent = flowers,
+				})
+			end
 		end
 	end
 
@@ -260,34 +315,64 @@ local function buildHive(index: number, hivesFolder)
 		Material = Enum.Material.WoodPlanks,
 		Parent = model,
 	})
-	local frame = part({
-		Name = "Frame",
-		Size = Vector3.new(27, 25, 2),
-		CFrame = CFrame.new(x, centerY, z - 1.3),
-		Color = Color3.fromRGB(196, 128, 40),
-		Material = Enum.Material.Wood,
-		Parent = model,
-	})
-	part({
-		Name = "Roof",
-		ClassName = "WedgePart",
-		Size = Vector3.new(29, 4, 5),
-		CFrame = CFrame.new(x, centerY + 14.5, z - 0.8),
-		Color = DARK_WOOD,
-		Material = Enum.Material.Wood,
-		Parent = model,
-	})
-	for _, side in { -1, 1 } do
+
+	local hiveMesh = raw("Hive")
+	local cellMesh, cellRel = rawMesh("HexCell")
+	local facing = function(pos: Vector3)
+		return CFrame.lookAt(pos, pos + forward)
+	end
+	if hiveMesh then
+		-- Blender hive: stand it on the platform, frame front just behind the cells
+		local body = hiveMesh:Clone()
+		body.Name = "Body"
+		body:PivotTo(facing(Vector3.new(x, 20, z - 0.45)))
+		local boxCF, boxSize = body:GetBoundingBox()
+		local lift = 1 - (boxCF.Position.Y - boxSize.Y / 2)
+		body:PivotTo(body:GetPivot() + Vector3.new(0, lift, 0))
+		centerY = body:GetPivot().Position.Y
+		for _, p in body:GetDescendants() do
+			if p:IsA("BasePart") then
+				p.Anchored = true
+				p.CanCollide = p.Name ~= "Honey" and p.Name ~= "Root"
+				p.CanQuery = p.Name ~= "Root"
+			end
+		end
+		local frameMesh = body:FindFirstChild("Frame")
+		if frameMesh then
+			frameMesh.Parent = model -- HiveService looks for a part named Frame
+		end
+		body.Parent = model
+		model.PrimaryPart = frameMesh or body.PrimaryPart
+	else
+		local frame = part({
+			Name = "Frame",
+			Size = Vector3.new(27, 25, 2),
+			CFrame = CFrame.new(x, centerY, z - 1.3),
+			Color = Color3.fromRGB(196, 128, 40),
+			Material = Enum.Material.Wood,
+			Parent = model,
+		})
 		part({
-			Name = "Post",
-			Size = Vector3.new(2, 27, 2),
-			CFrame = CFrame.new(x + side * 14, centerY, z - 0.5),
+			Name = "Roof",
+			ClassName = "WedgePart",
+			Size = Vector3.new(29, 4, 5),
+			CFrame = CFrame.new(x, centerY + 14.5, z - 0.8),
 			Color = DARK_WOOD,
 			Material = Enum.Material.Wood,
 			Parent = model,
 		})
+		for _, side in { -1, 1 } do
+			part({
+				Name = "Post",
+				Size = Vector3.new(2, 27, 2),
+				CFrame = CFrame.new(x + side * 14, centerY, z - 0.5),
+				Color = DARK_WOOD,
+				Material = Enum.Material.Wood,
+				Parent = model,
+			})
+		end
+		model.PrimaryPart = frame
 	end
-	model.PrimaryPart = frame
 
 	local cells = Instance.new("Folder")
 	cells.Name = "Cells"
@@ -297,16 +382,31 @@ local function buildHive(index: number, hivesFolder)
 	for slot = 1, grid.count do
 		local offset = HexGrid.ToOffset(Config.Hive.Radius, slot, Config.Hive.CellSize)
 		local pos = Vector3.new(x - offset.X, centerY + offset.Y, z)
-		part({
-			Name = "Cell_" .. slot,
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(0.8, diameter, diameter),
-			CFrame = CFrame.new(pos) * CFrame.Angles(0, math.pi / 2, 0),
-			Color = Color3.fromRGB(92, 64, 36),
-			Transparency = 0.35,
-			Attributes = { Slot = slot },
-			Parent = cells,
-		})
+		if cellMesh then
+			local scale = (Config.Hive.CellSize * 0.95 * 2) / math.max(cellMesh.Size.X, cellMesh.Size.Y, cellMesh.Size.Z)
+			local cell = cellMesh:Clone()
+			cell.Name = "Cell_" .. slot
+			cell.Size = cellMesh.Size * scale
+			cell.CFrame = facing(pos) * cellRel.Rotation
+			cell.Color = Color3.fromRGB(92, 64, 36)
+			cell.Transparency = 0.35
+			cell.Material = Enum.Material.SmoothPlastic
+			cell.Anchored = true
+			cell.CanCollide = false
+			cell:SetAttribute("Slot", slot)
+			cell.Parent = cells
+		else
+			part({
+				Name = "Cell_" .. slot,
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(0.8, diameter, diameter),
+				CFrame = CFrame.new(pos) * CFrame.Angles(0, math.pi / 2, 0),
+				Color = Color3.fromRGB(92, 64, 36),
+				Transparency = 0.35,
+				Attributes = { Slot = slot },
+				Parent = cells,
+			})
+		end
 	end
 
 	local pad = part({
@@ -332,7 +432,7 @@ local function buildHive(index: number, hivesFolder)
 	local sign = part({
 		Name = "Sign",
 		Size = Vector3.new(1, 1, 1),
-		CFrame = CFrame.new(x, centerY + 19, z),
+		CFrame = CFrame.new(x, centerY + (hiveMesh and 24 or 19), z),
 		Transparency = 1,
 		CanCollide = false,
 		Parent = model,
@@ -492,7 +592,22 @@ local function buildDecor(decorFolder)
 		if math.abs(pos.Z) < 60 and math.abs(pos.X) < 120 then
 			clear = false -- spawn plaza and shops
 		end
-		if clear then
+		local treeMesh = raw("Tree")
+		if clear and treeMesh then
+			placed += 1
+			local tree = treeMesh:Clone()
+			tree.Name = "Tree"
+			tree:ScaleTo(rng:NextNumber(0.8, 1.25))
+			tree:PivotTo(CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0))
+			for _, p in tree:GetDescendants() do
+				if p:IsA("BasePart") then
+					p.Anchored = true
+					p.CanCollide = p.Name == "Trunk"
+					p.CastShadow = true
+				end
+			end
+			tree.Parent = decorFolder
+		elseif clear then
 			placed += 1
 			local height = rng:NextNumber(8, 14)
 			local tree = Instance.new("Model")

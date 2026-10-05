@@ -49,11 +49,13 @@ local function build(monsterType: string)
 			table.insert(offsets, { Part = part, Offset = root.CFrame:ToObjectSpace(part.CFrame) })
 		end
 	end
-	-- health bar
+	-- health bar (mesh templates are "Grounded": their root sits on the ground)
 	local def = Config.Monsters[monsterType]
+	local grounded = model:GetAttribute("Grounded") == true
+	local height = grounded and model:GetExtentsSize().Y or def.Size * 0.7
 	local gui = Instance.new("BillboardGui")
 	gui.Size = UDim2.fromOffset(110, 26)
-	gui.StudsOffset = Vector3.new(0, def.Size * 0.7 + 1.2, 0)
+	gui.StudsOffset = Vector3.new(0, height + 1.2, 0)
 	gui.MaxDistance = 90
 	gui.Parent = root
 	local name = Instance.new("TextLabel")
@@ -76,7 +78,7 @@ local function build(monsterType: string)
 	fill.BorderSizePixel = 0
 	fill.Parent = back
 	model.Parent = folder
-	return model, root, offsets, fill
+	return model, root, offsets, fill, grounded
 end
 
 function MonsterRenderer:GetPosition(id: number): Vector3?
@@ -96,7 +98,7 @@ function MonsterRenderer:_spawn(info)
 	if monsters[info.Id] then
 		monsters[info.Id].Model:Destroy()
 	end
-	local model, root, offsets, fill = build(info.Type)
+	local model, root, offsets, fill, grounded = build(info.Type)
 	local def = Config.Monsters[info.Type]
 	local from = info.From or info.Pos
 	monsters[info.Id] = {
@@ -111,7 +113,7 @@ function MonsterRenderer:_spawn(info)
 		Health = info.Health,
 		MaxHealth = info.MaxHealth,
 		Fill = fill,
-		Height = def.Size / 2,
+		Height = grounded and 0 or def.Size / 2,
 		Position = from,
 		Look = Vector3.new(0, 0, -1),
 	}
