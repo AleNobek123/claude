@@ -219,7 +219,7 @@ function Tutorial:_updateTrail(from: Vector3, to: Vector3)
 			while d <= length and #trailPoints < MAX_DOTS do
 				local p = a + flat.Unit * d
 				local hit = Workspace:Raycast(p + Vector3.new(0, 60, 0), Vector3.new(0, -140, 0), rayParams)
-				table.insert(trailPoints, Vector3.new(p.X, (hit and hit.Position.Y or from.Y - 3) + 0.15, p.Z))
+				table.insert(trailPoints, Vector3.new(p.X, (hit and hit.Position.Y or from.Y - 3) + 0.35, p.Z))
 				d += DOT_SPACING
 			end
 			carry = d - length

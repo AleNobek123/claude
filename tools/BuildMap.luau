@@ -242,8 +242,6 @@ end
 
 local function buildTerrain()
 	Terrain:Clear()
-	-- clean low-poly look; decoration grass would also hide flowers, pads and the tutorial trail
-	Terrain.Decoration = false
 	Terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(116, 190, 82))
 	Terrain:SetMaterialColor(Enum.Material.Rock, Color3.fromRGB(150, 140, 128))
 	Terrain:SetMaterialColor(Enum.Material.Slate, Color3.fromRGB(132, 124, 116))
@@ -293,6 +291,18 @@ local function buildTerrain()
 		local mid = (a + b) / 2
 		local len = (b - a).Magnitude
 		fillBlock(CFrame.lookAt(Vector3.new(mid.X, -1, mid.Z), Vector3.new(b.X, -1, b.Z)), Vector3.new(11, 2, len + 6), Enum.Material.Ground)
+	end
+	-- decoration-free beds (grass blades would poke through flowers, pads and nests)
+	for _, def in Config.Fields do
+		local size = def.Tiles * Config.Tiles.Size + 4
+		fillBlock(CFrame.new(def.Center.X, def.Center.Y - 1, def.Center.Z), Vector3.new(size, 2, size), Enum.Material.Ground)
+	end
+	fillBlock(CFrame.new(0, -1, -88), Vector3.new(Config.Hive.Count * 50 + 20, 2, 30), Enum.Material.Pavement)
+	for _, nest in Config.Nests do
+		fillCylinder(CFrame.new(nest.Position.X, -1, nest.Position.Z), 2, 12, Enum.Material.Pavement)
+	end
+	for _, pos in { Vector3.new(-56, 0, 28), Vector3.new(56, 0, 28), Vector3.new(-80, 0, -36), Vector3.new(80, 0, -36), Vector3.new(-100, 0, 14), Vector3.new(100, 0, 14) } do
+		fillCylinder(CFrame.new(pos.X, -1, pos.Z), 2, 10, Enum.Material.Pavement)
 	end
 	-- pond with a sandy rim
 	fillCylinder(CFrame.new(-82, -0.9, 40), 1.8, 20, Enum.Material.Sand)
