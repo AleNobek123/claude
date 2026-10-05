@@ -3,7 +3,7 @@
 	Turns the imported BeeTycoon_World.fbx into templates:
 	  Assets.Raw.{Nest, Gate, Rock_A, Rock_B, Bush, Mushroom, Fence, Lantern, Signpost, Arrow3D, Pine}
 	  Assets.Eggs.Egg (Top / Bottom / Spots, for the hatch cutscene and nest display eggs)
-	Orientation is normalized from the gate (moss sits on the front face = -Z).
+	Orientation is normalized from the gate pillars (long axis = X).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -40,22 +40,21 @@ return function()
 	end
 	local log = {}
 
-	-- yaw normalization: gate moss is in front of the arch (front = -Z)
-	local front = get("Gate_Moss").Position - get("Gate_Arch").Position
-	front = Vector3.new(front.X, 0, front.Z)
-	if front.Magnitude > 0.01 then
-		front = front.Unit
-		local yaw = math.atan2(-front.X, -front.Z) -- angle that maps front to -Z
-		if math.abs(yaw) > 0.01 then
-			local pivot = import:GetPivot()
-			local fix = CFrame.Angles(0, -yaw, 0)
-			for _, part in import:GetDescendants() do
-				if part:IsA("BasePart") then
-					part.CFrame = pivot * (fix * pivot:ToObjectSpace(part.CFrame))
-				end
+	-- yaw normalization: the gate pillars span the X axis (snap the import back to axis-aligned)
+	local pillars = get("Gate_Pillars")
+	local _, yaw = pillars.CFrame:ToOrientation()
+	if pillars.Size.Z > pillars.Size.X then
+		yaw += math.pi / 2
+	end
+	if math.abs(yaw) > 0.01 then
+		local pivot = import:GetPivot()
+		local fix = CFrame.Angles(0, -yaw, 0)
+		for _, part in import:GetDescendants() do
+			if part:IsA("BasePart") then
+				part.CFrame = pivot * (fix * pivot:ToObjectSpace(part.CFrame))
 			end
-			table.insert(log, string.format("rotated world import by %.0f deg", math.deg(yaw)))
 		end
+		table.insert(log, string.format("rotated world import by %.0f deg", math.deg(-yaw)))
 	end
 
 	local assets = folder("Assets", ReplicatedStorage)

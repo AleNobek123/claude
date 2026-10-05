@@ -197,6 +197,21 @@ end
 
 -- Terrain -------------------------------------------------------------------------------------------------
 
+-- Smooth terrain renders a full voxel's surface 2 studs above the filled volume, so every fill is biased down.
+local SURFACE_BIAS = Vector3.new(0, -2, 0)
+
+local function fillBlock(cf: CFrame, size: Vector3, material: Enum.Material)
+	Terrain:FillBlock(cf + SURFACE_BIAS, size, material)
+end
+
+local function fillBall(center: Vector3, radius: number, material: Enum.Material)
+	Terrain:FillBall(center + SURFACE_BIAS, radius, material)
+end
+
+local function fillCylinder(cf: CFrame, height: number, radius: number, material: Enum.Material)
+	Terrain:FillCylinder(cf + SURFACE_BIAS, height, radius, material)
+end
+
 local function ramp(from: Vector3, to: Vector3, width: number, material: Enum.Material)
 	local flat = Vector3.new(to.X - from.X, 0, to.Z - from.Z)
 	local length = flat.Magnitude
@@ -213,16 +228,16 @@ local function ramp(from: Vector3, to: Vector3, width: number, material: Enum.Ma
 		local p = from + dir * (length * t)
 		local h = rise * t
 		if h > 1 then
-			Terrain:FillBlock(CFrame.new(p.X, from.Y + h / 2 - 3, p.Z), Vector3.new(width, h, 4), Enum.Material.Rock)
+			fillBlock(CFrame.new(p.X, from.Y + h / 2 - 3, p.Z), Vector3.new(width, h, 4), Enum.Material.Rock)
 		end
 	end
-	Terrain:FillBlock(cf, Vector3.new(width, 6, slabLength), material)
+	fillBlock(cf, Vector3.new(width, 6, slabLength), material)
 end
 
 local function plateau(center: Vector3, size: number, top: number)
-	Terrain:FillBlock(CFrame.new(center.X, top / 2 - 6, center.Z), Vector3.new(size, top + 12, size), Enum.Material.Rock)
-	Terrain:FillBlock(CFrame.new(center.X, top * 0.35, center.Z), Vector3.new(size + 2, math.max(4, top * 0.3), size + 2), Enum.Material.Slate)
-	Terrain:FillBlock(CFrame.new(center.X, top - 2, center.Z), Vector3.new(size - 2, 4, size - 2), Enum.Material.Grass)
+	fillBlock(CFrame.new(center.X, top / 2 - 6, center.Z), Vector3.new(size, top + 12, size), Enum.Material.Rock)
+	fillBlock(CFrame.new(center.X, top * 0.35, center.Z), Vector3.new(size + 2, math.max(4, top * 0.3), size + 2), Enum.Material.Slate)
+	fillBlock(CFrame.new(center.X, top - 2, center.Z), Vector3.new(size - 2, 4, size - 2), Enum.Material.Grass)
 end
 
 local function buildTerrain()
@@ -239,18 +254,18 @@ local function buildTerrain()
 	Terrain.WaterReflectance = 0.3
 
 	-- ground (top surface at y = 0)
-	Terrain:FillBlock(CFrame.new(0, -10, 130), Vector3.new(820, 20, 820), Enum.Material.Grass)
+	fillBlock(CFrame.new(0, -10, 130), Vector3.new(820, 20, 820), Enum.Material.Grass)
 	-- rolling outer hills and rocky outcrops
 	local rng = Random.new(7)
 	for i = 1, 46 do
 		local angle = (i / 46) * math.pi * 2 + rng:NextNumber(-0.05, 0.05)
 		local r = rng:NextNumber(330, 390)
-		Terrain:FillBall(Vector3.new(math.cos(angle) * r, rng:NextNumber(-20, -6), 130 + math.sin(angle) * r), rng:NextNumber(34, 62), Enum.Material.Grass)
+		fillBall(Vector3.new(math.cos(angle) * r, rng:NextNumber(-20, -6), 130 + math.sin(angle) * r), rng:NextNumber(34, 62), Enum.Material.Grass)
 	end
 	for _ = 1, 14 do
 		local angle = rng:NextNumber(0, math.pi * 2)
 		local r = rng:NextNumber(300, 360)
-		Terrain:FillBall(Vector3.new(math.cos(angle) * r, rng:NextNumber(10, 30), 130 + math.sin(angle) * r), rng:NextNumber(14, 26), Enum.Material.Rock)
+		fillBall(Vector3.new(math.cos(angle) * r, rng:NextNumber(10, 30), 130 + math.sin(angle) * r), rng:NextNumber(14, 26), Enum.Material.Rock)
 	end
 	-- plateaus, then ramps (ramps last so they cut cleanly into the cliffs)
 	for fieldId, info in PLATEAUS do
@@ -261,7 +276,7 @@ local function buildTerrain()
 		ramp(info.RampFrom, info.Edge, 22, Enum.Material.Ground)
 	end
 	-- spawn plaza and paths
-	Terrain:FillCylinder(CFrame.new(0, -1, 0), 2.2, 26, Enum.Material.Pavement)
+	fillCylinder(CFrame.new(0, -1, 0), 2.2, 26, Enum.Material.Pavement)
 	local paths = {
 		{ Vector3.new(0, 0, 18), Vector3.new(0, 0, 86) }, -- spawn -> meadow
 		{ Vector3.new(0, 0, -18), Vector3.new(0, 0, -78) }, -- spawn -> hives
@@ -275,12 +290,12 @@ local function buildTerrain()
 		local a, b = seg[1], seg[2]
 		local mid = (a + b) / 2
 		local len = (b - a).Magnitude
-		Terrain:FillBlock(CFrame.lookAt(Vector3.new(mid.X, -1, mid.Z), Vector3.new(b.X, -1, b.Z)), Vector3.new(11, 2, len + 6), Enum.Material.Ground)
+		fillBlock(CFrame.lookAt(Vector3.new(mid.X, -1, mid.Z), Vector3.new(b.X, -1, b.Z)), Vector3.new(11, 2, len + 6), Enum.Material.Ground)
 	end
 	-- pond with a sandy rim
-	Terrain:FillCylinder(CFrame.new(-82, -0.9, 40), 1.8, 20, Enum.Material.Sand)
-	Terrain:FillCylinder(CFrame.new(-82, -1, 40), 6, 16, Enum.Material.Air)
-	Terrain:FillCylinder(CFrame.new(-82, -3.4, 40), 2.4, 16, Enum.Material.Water)
+	fillCylinder(CFrame.new(-82, -0.9, 40), 1.8, 20, Enum.Material.Sand)
+	fillCylinder(CFrame.new(-82, -1, 40), 6, 16, Enum.Material.Air)
+	fillCylinder(CFrame.new(-82, -3.4, 40), 2.4, 16, Enum.Material.Water)
 end
 
 -- Fields --------------------------------------------------------------------------------------------------
