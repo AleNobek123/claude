@@ -221,8 +221,7 @@ function UI.Button(props, onClick)
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Font = UI.Font,
 		TextColor3 = UI.Colors.White,
-		TextStrokeColor3 = Color3.fromRGB(120, 70, 20),
-		TextStrokeTransparency = 0.75,
+		TextStrokeTransparency = 1,
 		TextScaled = true,
 		Text = "",
 	})
@@ -232,6 +231,15 @@ function UI.Button(props, onClick)
 		end
 	end
 	UI.Round().Parent = button
+	-- outlined label stays readable on light gradients
+	UI.Create("UIStroke", {
+		Name = "TextOutline",
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual,
+		Color = color:Lerp(Color3.fromRGB(90, 45, 10), 0.75),
+		Thickness = 2,
+		Transparency = 0.1,
+		Parent = button,
+	})
 	local light = color:Lerp(Color3.new(1, 1, 1), 0.28)
 	local dark = color:Lerp(Color3.new(0, 0, 0), 0.08)
 	UI.Gradient(light, dark).Parent = button
@@ -266,6 +274,10 @@ function UI.SetButtonColor(button: GuiButton, color: Color3)
 	local gradient = button:FindFirstChildOfClass("UIGradient")
 	if gradient then
 		gradient.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.28), color:Lerp(Color3.new(0, 0, 0), 0.08))
+	end
+	local outline = button:FindFirstChild("TextOutline")
+	if outline then
+		outline.Color = color:Lerp(Color3.fromRGB(90, 45, 10), 0.75)
 	end
 end
 
@@ -404,7 +416,7 @@ function UI:Panel(name: string, title: string, iconName: string?)
 		Name = "Body",
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Color3.new(1, 1, 1),
-		BackgroundTransparency = 0.04,
+		BackgroundTransparency = 0,
 		ZIndex = 10,
 		Parent = holder,
 	}, { UI.Corner(26), UI.Gradient(Color3.fromRGB(255, 252, 245), Color3.fromRGB(251, 236, 206)) })

@@ -532,8 +532,8 @@ local function buildHive(index: number, hivesFolder)
 		Size = Vector3.new(0.4, 10, 10),
 		CFrame = CFrame.new(x, 0.25, z + 12) * CFrame.Angles(0, 0, math.pi / 2),
 		Color = HONEY,
-		Material = Enum.Material.Neon,
-		Transparency = 0.5,
+		Material = Enum.Material.SmoothPlastic,
+		Transparency = 0.3,
 		CanCollide = false,
 		Parent = model,
 	})

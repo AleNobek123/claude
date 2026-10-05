@@ -150,7 +150,7 @@ function Shop:Start()
 		CanvasSize = UDim2.new(),
 		Parent = content,
 	}, {
-		UI.Create("UIGridLayout", { CellSize = UDim2.fromOffset(200, 230), CellPadding = UDim2.fromOffset(16, 16), SortOrder = Enum.SortOrder.LayoutOrder }),
+		UI.Create("UIGridLayout", { CellSize = UDim2.fromOffset(200, 230), CellPadding = UDim2.fromOffset(16, 16), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }),
 		UI.Padding(8),
 	})
 	panel.OnOpen = function(openTab)

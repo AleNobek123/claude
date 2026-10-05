@@ -75,7 +75,7 @@ function Codex:Start()
 		CanvasSize = UDim2.new(),
 		Parent = content,
 	}, {
-		UI.Create("UIGridLayout", { CellSize = UDim2.fromOffset(160, 204), CellPadding = UDim2.fromOffset(14, 14), SortOrder = Enum.SortOrder.LayoutOrder }),
+		UI.Create("UIGridLayout", { CellSize = UDim2.fromOffset(160, 204), CellPadding = UDim2.fromOffset(14, 14), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }),
 		UI.Padding(8),
 	})
 	panel.OnOpen = function()

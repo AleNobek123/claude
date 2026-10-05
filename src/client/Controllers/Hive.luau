@@ -278,6 +278,23 @@ local function action(parent: Instance, iconName: string, text: string, color: C
 	return UI.Button({ Text = text, Icon = iconName, Size = UDim2.new(1, 0, 1, -4), BackgroundColor3 = color or UI.Colors.Honey, MaxTextSize = 18, Parent = r }, onClick)
 end
 
+-- Several compact buttons side by side in one row
+local function actionRow(parent: Instance, buttons)
+	local r = row(parent, 46)
+	UI.List(6, true).Parent = r
+	for i, b in buttons do
+		UI.Button({
+			LayoutOrder = i,
+			Text = b.Text,
+			Icon = b.Icon,
+			Size = UDim2.new(1 / #buttons, -6 * (#buttons - 1) / #buttons, 1, -4),
+			BackgroundColor3 = b.Color or UI.Colors.Honey,
+			MaxTextSize = 17,
+			Parent = r,
+		}, b.OnClick)
+	end
+end
+
 function Hive:_renderDetail(data)
 	for _, child in detail.List:GetChildren() do
 		if child:IsA("GuiObject") then
@@ -344,18 +361,20 @@ function Hive:_renderDetail(data)
 		if def.Ability then
 			stat(list, "Star", `{def.Ability.Name}  ({string.format("%.0f", stats.AbilityCooldown)}s)`)
 		end
+		local buttons = {}
 		if not maxed then
-			action(list, "Treat", `Feed  ({data.Treats})`, nil, function()
+			table.insert(buttons, { Icon = "Treat", Text = tostring(data.Treats), OnClick = function()
 				Net.Event("FeedBee"):FireServer(selected, data.Treats >= 10 and 10 or 1)
-			end)
+			end })
 		end
-		action(list, "Serum", `Serum  ({data.Serums})`, UI.Colors.Purple, function()
+		table.insert(buttons, { Icon = "Serum", Text = tostring(data.Serums), Color = UI.Colors.Purple, OnClick = function()
 			Net.Event("UseSerum"):FireServer(selected)
-		end)
-		action(list, "Honeycomb", moveMode and "Cancel" or "Move", UI.Colors.Blue, function()
+		end })
+		table.insert(buttons, { Icon = "Honeycomb", Text = moveMode and "Cancel" or "Move", Color = UI.Colors.Blue, OnClick = function()
 			moveMode = not moveMode
 			self:Refresh()
-		end)
+		end })
+		actionRow(list, buttons)
 	elseif selected <= unlocked then
 		local title = row(list, 34)
 		UI.Label({ Text = "Empty cell", Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 26, Parent = title })

@@ -96,7 +96,7 @@ function Store:Start()
 		CanvasSize = UDim2.new(),
 		Parent = content,
 	}, {
-		UI.Create("UIGridLayout", { CellSize = UDim2.fromOffset(200, 220), CellPadding = UDim2.fromOffset(16, 16), SortOrder = Enum.SortOrder.LayoutOrder }),
+		UI.Create("UIGridLayout", { CellSize = UDim2.fromOffset(200, 220), CellPadding = UDim2.fromOffset(16, 16), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder }),
 		UI.Padding(8),
 	})
 	if Config.StudioFreePurchases and RunService:IsStudio() then
