@@ -738,9 +738,25 @@ local function buildHive(index: number, hivesFolder)
 		for _, c in cells:GetChildren() do
 			cellTop = math.max(cellTop, frameCF:PointToObjectSpace(c.Position).Y + c.Size.Y / 2)
 		end
-		-- full-size drips, lifted so they hang from under the roof down to just above the cells
+		-- honey dripping from under the roof, ending just above the top row of cells.
+		-- Assets.Raw.HoneyDrip (Blender, soft drips) replaces the old stiff drip mesh when present.
 		local honey = body:FindFirstChild("Honey")
-		if honey then
+		local drip = raw("HoneyDrip")
+		if honey and drip and drip:IsA("BasePart") then
+			local rel = frameCF:ToObjectSpace(honey.CFrame)
+			local top = model.PrimaryPart.Size.Y / 2 + 0.6 -- tucked under the roof
+			local height = math.max(1.2, top - (cellTop + 0.05))
+			local new = drip:Clone()
+			new.Name = "Honey"
+			new.Size = Vector3.new(math.min(drip.Size.X, 11.4), height, drip.Size.Z)
+			new.CFrame = frameCF * CFrame.new(0, cellTop + 0.05 + height / 2, rel.Z)
+			new.Color, new.Material, new.Transparency = honey.Color, honey.Material, honey.Transparency
+			new.Anchored = true
+			new.CanCollide = false
+			new.CastShadow = false
+			honey:Destroy()
+			new.Parent = body
+		elseif honey then
 			local rel = frameCF:ToObjectSpace(honey.CFrame)
 			honey.CFrame = frameCF * CFrame.new(rel.X, cellTop + 0.1 + honey.Size.Y / 2, rel.Z) * rel.Rotation
 		end
