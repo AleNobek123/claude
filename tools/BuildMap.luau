@@ -150,6 +150,29 @@ local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Include
 rayParams.FilterDescendantsInstances = { Terrain }
 
+-- Text painted on a signpost's board (both faces), instead of floating above it.
+-- The Signpost mesh is post + board; the board is the top ~36% of the mesh.
+local function boardText(board: BasePart, title: string, sub: string)
+	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
+		local gui = Instance.new("SurfaceGui")
+		gui.Name = "BoardText" .. face.Name
+		gui.Face = face
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 60
+		gui.LightInfluence = 0.4
+		gui.MaxDistance = 160
+		gui.Parent = board
+		local holder = Instance.new("Frame")
+		holder.BackgroundTransparency = 1
+		holder.Position = UDim2.fromScale(0.07, 0.035)
+		holder.Size = UDim2.fromScale(0.86, 0.29)
+		holder.Parent = gui
+		local dark = Color3.fromRGB(70, 40, 18)
+		label(holder, "Title", title, { Size = UDim2.fromScale(1, 0.6), TextColor3 = Color3.fromRGB(255, 244, 214), TextStrokeColor3 = dark, TextStrokeTransparency = 0 })
+		label(holder, "Sub", sub, { Size = UDim2.fromScale(1, 0.36), Position = UDim2.fromScale(0, 0.62), TextColor3 = Color3.fromRGB(255, 214, 90), TextStrokeColor3 = dark, TextStrokeTransparency = 0 })
+	end
+end
+
 local function groundY(x: number, z: number): number?
 	local hit = Workspace:Raycast(Vector3.new(x, 200, z), Vector3.new(0, -400, 0), rayParams)
 	return hit and hit.Position.Y or nil
@@ -532,15 +555,9 @@ local function buildField(def, fieldsFolder)
 	local signPos = entry + inward * 10 + inward:Cross(Vector3.yAxis) * 16
 	local sign = place("Signpost", CFrame.lookAt(Vector3.new(signPos.X, c.Y, signPos.Z), Vector3.new(signPos.X, c.Y, signPos.Z) - inward), 1.6, f)
 	local board = sign and sign:FindFirstChild("Board")
-	local holder = board or part({ Name = "Sign", Size = Vector3.new(6, 2.4, 0.4), CFrame = CFrame.new(signPos + Vector3.new(0, 5, 0)), Color = WOOD, Parent = f })
-	local gui = Instance.new("BillboardGui")
-	gui.Size = UDim2.new(14, 0, 3.6, 0)
-	gui.StudsOffset = Vector3.new(0, board and 5.2 or 2.5, 0)
-	gui.MaxDistance = 140
-	gui.LightInfluence = 0
-	gui.Parent = holder
-	label(gui, "Name", def.Name, { Size = UDim2.fromScale(1, 0.6), TextColor3 = Color3.fromRGB(255, 240, 200) })
-	label(gui, "Info", `{def.Multiplier}x pollen`, { Size = UDim2.fromScale(1, 0.38), Position = UDim2.fromScale(0, 0.62) })
+	if board then
+		boardText(board, def.Name, `{def.Multiplier}x pollen`)
+	end
 end
 
 -- Stone gates on the plateau edges ------------------------------------------------------------------------
@@ -1122,14 +1139,7 @@ local function buildDecor(decor: Instance)
 		local post = place("Signpost", CFrame.lookAt(Vector3.new(pos.X, y, pos.Z), Vector3.new(SPAWN.X, y, SPAWN.Z)), 1.5, decor)
 		local board = post and post:FindFirstChild("Board")
 		if board then
-			local gui = Instance.new("BillboardGui")
-			gui.Size = UDim2.new(12, 0, 3, 0)
-			gui.StudsOffset = Vector3.new(0, 4.5, 0)
-			gui.MaxDistance = 120
-			gui.LightInfluence = 0
-			gui.Parent = board
-			label(gui, "Field", def.Name, { Size = UDim2.fromScale(1, 0.6), TextColor3 = Color3.fromRGB(255, 240, 200) })
-			label(gui, "Req", def.VIP and "VIP pass" or (def.BeesRequired .. " bees"), { Size = UDim2.fromScale(1, 0.4), Position = UDim2.fromScale(0, 0.6) })
+			boardText(board, def.Name, def.VIP and "VIP pass" or (def.BeesRequired .. " bees"))
 		end
 	end
 end

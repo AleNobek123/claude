@@ -159,8 +159,8 @@ save(img, "gear")
 
 # --- gift (robux store) -----------------------------------------------------------------------
 img = canvas(); d = ImageDraw.Draw(img)
-d.rounded_rectangle([210, 420, 814, 880], 60, fill=GREEN)
-d.rounded_rectangle([170, 320, 854, 470], 50, fill=(140, 230, 140))
+d.rounded_rectangle([210, 420, 814, 880], 60, fill=(235, 64, 92))
+d.rounded_rectangle([170, 320, 854, 470], 50, fill=(255, 120, 140))
 d.rectangle([462, 320, 562, 880], fill=HONEY)
 d.ellipse([300, 170, 520, 360], outline=HONEY, width=60)
 d.ellipse([504, 170, 724, 360], outline=HONEY, width=60)

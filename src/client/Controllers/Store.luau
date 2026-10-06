@@ -108,7 +108,7 @@ function Store:_render()
 end
 
 function Store:Start()
-	local content, panel = UI:Panel("Store", "Store", "Gift")
+	local content, panel = UI:Panel("Store", "Store", "Star")
 	list = UI.Create("ScrollingFrame", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundTransparency = 1,
