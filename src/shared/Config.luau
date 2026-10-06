@@ -179,8 +179,8 @@ Config.Backpacks = EconomicScaling.Build("Backpacks", {
 	{ Id = "CrystalJar", Name = "Crystal Jar", Shape = "Canister" }, -- own template (tools/IntegrateV6)
 	{ Id = "LavaCanister", Name = "Lava Canister", Shape = "Canister", Model = "Canister", Variant = { Color = Color3.fromRGB(255, 90, 20), Material = Enum.Material.Neon } },
 	{ Id = "ShadowSatchel", Name = "Shadow Satchel", Shape = "Pouch", Model = "Satchel", Variant = { Color = Color3.fromRGB(70, 40, 110), Material = Enum.Material.Glass } },
-	{ Id = "FrostHive", Name = "Frost Hive Pack", Shape = "Tank", Model = "HivePack", Variant = { Color = Color3.fromRGB(190, 235, 255), Material = Enum.Material.Ice } },
-	{ Id = "GoldenTank", Name = "Golden Tank", Shape = "Tank", Model = "PorcelainTank", Variant = { Color = Color3.fromRGB(255, 205, 60), Material = Enum.Material.Foil } },
+	{ Id = "FrostHive", Name = "Frost Hive Pack", Shape = "Tank" }, -- own template (tools/IntegrateV6)
+	{ Id = "GoldenTank", Name = "Golden Tank", Shape = "Tank" }, -- own template (tools/IntegrateV6)
 	{ Id = "GalaxyReservoir", Name = "Galaxy Reservoir", Shape = "Tank", Model = "RoyalReservoir", Variant = { Color = Color3.fromRGB(140, 60, 255), Material = Enum.Material.Neon } },
 	{ Id = "InfinityPack", Name = "Infinity Pack", Shape = "Pouch", Model = "Pouch", Variant = { Color = Color3.fromRGB(255, 240, 140), Material = Enum.Material.Neon } },
 })
@@ -453,11 +453,14 @@ Config.GamepassOrder = { "ExtraSlots", "VIPField", "AutoConvert" }
 Config.HoneyLadder = {
 	Name = "Honey Forever",
 	Base = 2, -- multiplier = Base ^ tier
+	-- price triples every step (x2 = 3, x4 = 9, x8 = 27 ...) up to 1999, then stays at 1999
 	Steps = {
-		{ Id = 0, Robux = 99 },
-		{ Id = 0, Robux = 249 },
-		{ Id = 0, Robux = 499 },
-		{ Id = 0, Robux = 999 },
+		{ Id = 0, Robux = 3 },
+		{ Id = 0, Robux = 9 },
+		{ Id = 0, Robux = 27 },
+		{ Id = 0, Robux = 81 },
+		{ Id = 0, Robux = 243 },
+		{ Id = 0, Robux = 729 },
 		{ Id = 0, Robux = 1999 },
 	},
 }

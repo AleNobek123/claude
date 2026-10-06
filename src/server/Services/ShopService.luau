@@ -162,10 +162,16 @@ function ShopService:GiveBackpack(player: Player)
 	model.Parent = character
 end
 
--- Boots: one procedural model per foot (Shared.GearModels), welded on, plus walk speed
+-- Boots: one model per foot (Shared.GearModels), welded on, plus walk speed
+local TALL_BOOTS = { Hiking = true, Rain = true, Honey = true, Rocket = true, Lightning = true, Royal = true }
 local function buildShoe(foot: BasePart, def, r15: boolean): Model
 	-- R6 legs are 2 studs tall: build around a virtual foot at the bottom of the leg
 	local size = r15 and foot.Size or Vector3.new(foot.Size.X, 0.6, foot.Size.Z + 0.1)
+	-- tall boots must enclose the lower leg (and the layered clothing on it)
+	local leg = r15 and foot.Parent and foot.Parent:FindFirstChild((foot.Name:gsub("Foot", "LowerLeg")))
+	if leg and TALL_BOOTS[def.Style] then
+		size = Vector3.new(math.max(size.X, leg.Size.X * 1.12 / 1.2), size.Y, math.max(size.Z, leg.Size.Z * 1.12 * 1.5 / 1.4))
+	end
 	local frame = r15 and foot.CFrame or foot.CFrame * CFrame.new(0, -foot.Size.Y / 2 + 0.3, 0)
 	local model = GearModels.Boot(def, size)
 	for _, p in model:GetChildren() do
@@ -215,6 +221,14 @@ function ShopService:GiveBoots(player: Player)
 		local foot = character:FindFirstChild(name)
 		if foot then
 			buildShoe(foot, def, r15).Parent = character
+			-- shoes replace the feet (otherwise the avatar's foot pokes through the shoe);
+			-- flip-flops show the foot
+			if r15 then
+				if foot:GetAttribute("BootBaseTransparency") == nil then
+					foot:SetAttribute("BootBaseTransparency", foot.Transparency)
+				end
+				foot.Transparency = def.Style == "FlipFlop" and foot:GetAttribute("BootBaseTransparency") or 1
+			end
 		end
 	end
 end

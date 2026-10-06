@@ -6,9 +6,10 @@
 	                                Role attribute = how BeeLooks colours them
 	  Assets.Boots.<Style>          parts in the foot frame of a reference foot (1 x 0.55 x 1.5),
 	                                Role attribute = how ShopService colours them
-	  Assets.Backpacks.Jar / CrystalJar   coloured honey jar packs (replace the grey textured jar)
-	Mesh names come from Blender: Acc_<Name>_<Role>, Boot_<Style>_<Role>, Pack_Jar_<Role>, and the
-	markers Acc_Ref (the bee body), Boot_Ref_<Style>, Pack_Ref_Jar give each asset's origin.
+	  Assets.Backpacks.<Id>         Blender packs (honey jar, hive pack, porcelain tank), each in a
+	                                base palette and a premium reskin palette
+	Mesh names come from Blender: Acc_<Name>_<Role>, Boot_<Style>_<Role>, Pack_<Kind>_<Role>, and the
+	markers Acc_Ref (the bee body), Boot_Ref_<Style>, Pack_Ref_<Kind> give each asset's origin.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -74,6 +75,46 @@ local CRYSTAL = {
 	Red = { Color3.fromRGB(80, 160, 255), Enum.Material.Fabric, 0 },
 	Gold = { Color3.fromRGB(235, 250, 255), Enum.Material.Glass, 0.1 },
 	Leather = { Color3.fromRGB(60, 90, 150), Enum.Material.Fabric, 0 },
+}
+
+local HIVE = {
+	Main = { Color3.fromRGB(255, 192, 52), Enum.Material.SmoothPlastic, 0 },
+	Comb = { Color3.fromRGB(236, 158, 28), Enum.Material.SmoothPlastic, 0 },
+	Dark = { Color3.fromRGB(62, 36, 16), Enum.Material.SmoothPlastic, 0 },
+	Honey = { Color3.fromRGB(255, 170, 20), Enum.Material.Glass, 0.1 },
+	Wood = { Color3.fromRGB(150, 98, 52), Enum.Material.Wood, 0 },
+	Leather = { Color3.fromRGB(112, 66, 34), Enum.Material.Fabric, 0 },
+	Gold = { Color3.fromRGB(255, 220, 110), Enum.Material.Foil, 0 },
+}
+local FROST = {
+	Main = { Color3.fromRGB(205, 238, 255), Enum.Material.Ice, 0 },
+	Comb = { Color3.fromRGB(150, 210, 250), Enum.Material.Glass, 0.15 },
+	Dark = { Color3.fromRGB(40, 70, 120), Enum.Material.SmoothPlastic, 0 },
+	Honey = { Color3.fromRGB(120, 215, 255), Enum.Material.Neon, 0.1 },
+	Wood = { Color3.fromRGB(220, 240, 255), Enum.Material.Ice, 0 },
+	Leather = { Color3.fromRGB(60, 92, 150), Enum.Material.Fabric, 0 },
+	Gold = { Color3.fromRGB(235, 250, 255), Enum.Material.Glass, 0.1 },
+}
+local PORCELAIN = {
+	Main = { Color3.fromRGB(246, 248, 253), Enum.Material.SmoothPlastic, 0 },
+	Accent = { Color3.fromRGB(44, 92, 222), Enum.Material.SmoothPlastic, 0 },
+	White = { Color3.fromRGB(255, 255, 255), Enum.Material.SmoothPlastic, 0 },
+	Strap = { Color3.fromRGB(40, 82, 205), Enum.Material.Fabric, 0 },
+	Metal = { Color3.fromRGB(200, 206, 216), Enum.Material.Metal, 0 },
+}
+local GOLDEN = {
+	Main = { Color3.fromRGB(255, 204, 60), Enum.Material.Foil, 0 },
+	Accent = { Color3.fromRGB(255, 246, 205), Enum.Material.SmoothPlastic, 0 },
+	White = { Color3.fromRGB(255, 120, 60), Enum.Material.Neon, 0 },
+	Strap = { Color3.fromRGB(150, 92, 32), Enum.Material.Fabric, 0 },
+	Metal = { Color3.fromRGB(255, 230, 140), Enum.Material.Foil, 0 },
+}
+
+-- Blender pack -> templates: kind = Pack_<kind>_* meshes, Main = the role that becomes "Main"
+local PACKS = {
+	Jar = { Main = "Glass", Templates = { Jar = JAR, CrystalJar = CRYSTAL } },
+	Hive = { Main = "Main", Templates = { HivePack = HIVE, FrostHive = FROST } },
+	Tank = { Main = "Main", Templates = { PorcelainTank = PORCELAIN, GoldenTank = GOLDEN } },
 }
 
 local function paint(model: Model, palette)
@@ -147,36 +188,36 @@ return function()
 	end
 	table.insert(log, styles .. " boot styles")
 
-	-- honey jar packs --------------------------------------------------------------------------------
-	local jarRef = meshes.Pack_Ref_Jar
-	if jarRef then
-		local backpacks = folder(assets, "Backpacks")
-		local jar = Instance.new("Model")
-		jar.Name = "Jar"
-		for partName, part in meshes do
-			local role = partName:match("^Pack_Jar_(%w+)$")
-			if role then
-				local p = prep(part, role, jarRef.CFrame:ToObjectSpace(part.CFrame))
-				p.Name = role == "Glass" and "Main" or role
-				p.Parent = jar
+	-- backpacks: one Blender model, two palettes each (base pack + its premium reskin) ----------
+	local backpacks = folder(assets, "Backpacks")
+	for kind, info in PACKS do
+		local ref = meshes["Pack_Ref_" .. kind]
+		if ref then
+			local base = Instance.new("Model")
+			for partName, part in meshes do
+				local role = partName:match("^Pack_" .. kind .. "_(%w+)$")
+				if role then
+					local p = prep(part, role, ref.CFrame:ToObjectSpace(part.CFrame))
+					p.Name = role == info.Main and "Main" or role
+					p.Parent = base
+				end
 			end
-		end
-		jar.PrimaryPart = jar:FindFirstChild("Main")
-		jar:SetAttribute("Yaw", math.pi) -- straps were modelled on +Z; they must face the torso
-		jar:SetAttribute("Hug", 0.02) -- the strap plate is the front face: rest it on the back
-		local crystal = jar:Clone()
-		crystal.Name = "CrystalJar"
-		paint(jar, JAR)
-		paint(crystal, CRYSTAL)
-		for _, name in { "Jar", "CrystalJar" } do
-			local old = backpacks:FindFirstChild(name)
-			if old then
-				old:Destroy()
+			base.PrimaryPart = base:FindFirstChild("Main")
+			base:SetAttribute("Yaw", math.pi) -- straps were modelled on +Z; they must face the torso
+			base:SetAttribute("Hug", 0.02) -- the strap plate is the front face: rest it on the back
+			for id, palette in info.Templates do
+				local model = base:Clone()
+				model.Name = id
+				paint(model, palette)
+				local old = backpacks:FindFirstChild(id)
+				if old then
+					old:Destroy()
+				end
+				model.Parent = backpacks
+				table.insert(log, id)
 			end
+			base:Destroy()
 		end
-		jar.Parent = backpacks
-		crystal.Parent = backpacks
-		table.insert(log, "jar packs")
 	end
 
 	import:Destroy()

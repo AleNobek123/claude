@@ -723,9 +723,17 @@ local function buildHive(index: number, hivesFolder)
 	cells.Parent = model
 	local grid = HexGrid.Get(Config.Hive.Radius)
 	local diameter = Config.Hive.CellSize * math.sqrt(3) * 0.92
+	-- the hive mesh leans back a few degrees: lay the cells on the frame's plane, otherwise the
+	-- lower rows sink into the frame and show up as hollow rings
+	local frameCF = model.PrimaryPart and model.PrimaryPart.CFrame
+	local depth = frameCF and frameCF:PointToObjectSpace(Vector3.new(x, centerY, z)).Z
 	for slot = 1, grid.count do
 		local offset = HexGrid.ToOffset(Config.Hive.Radius, slot, Config.Hive.CellSize)
 		local pos = Vector3.new(x - offset.X, centerY + offset.Y, z)
+		if frameCF then
+			local l = frameCF:PointToObjectSpace(pos)
+			pos = frameCF * Vector3.new(l.X, l.Y, depth)
+		end
 		if cellMesh then
 			local scale = (Config.Hive.CellSize * 0.95 * 2) / math.max(cellMesh.Size.X, cellMesh.Size.Y, cellMesh.Size.Z)
 			local cell = cellMesh:Clone()

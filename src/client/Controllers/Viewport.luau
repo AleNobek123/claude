@@ -125,7 +125,7 @@ end
 
 -- Re-rendering a viewport is expensive, so at most BUDGET of them move per frame (round
 -- robin). Poses come from the clock, so motion keeps the same speed however many are open.
-local BUDGET = 8
+local BUDGET = 14
 local visible = {}
 local cursor = 0
 local lastScan = 0
@@ -136,7 +136,8 @@ local function pose(entry, t: number)
 	if entry.Mode == "spin" then
 		model:PivotTo(base * CFrame.Angles(0, t * 0.9, 0))
 	elseif entry.Mode == "float" then
-		model:PivotTo(base * CFrame.new(0, math.sin(t * 2 + entry.Phase) * 0.12, 0) * CFrame.Angles(0, math.sin(t * 0.8 + entry.Phase) * 0.35, math.sin(t * 1.6 + entry.Phase) * 0.06))
+		-- steady turntable + gentle bob (a back-and-forth sway read as speeding up / slowing down)
+		model:PivotTo(base * CFrame.new(0, math.sin(t * 2 + entry.Phase) * 0.08, 0) * CFrame.Angles(0, t * 0.7 + entry.Phase, 0))
 	elseif entry.Mode == "sleep" then
 		model:PivotTo(base * CFrame.new(0, math.sin(t * 1.4 + entry.Phase) * 0.04, 0) * CFrame.Angles(math.rad(8 + math.sin(t * 1.4 + entry.Phase) * 3), 0, 0))
 	end
