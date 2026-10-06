@@ -335,7 +335,7 @@ Config.Events = {
 }
 
 Config.EventInfo = {
-	MeteorShower = { Name = "Sunflower Meteor Shower", Color = Color3.fromRGB(255, 140, 50) },
+	MeteorShower = { Name = "Meteor Shower", Color = Color3.fromRGB(255, 140, 50) },
 	AphidInvasion = { Name = "Aphid Invasion", Color = Color3.fromRGB(110, 210, 80) },
 	GoldenBloom = { Name = "Golden Bloom", Color = Color3.fromRGB(255, 205, 60) },
 	HoneyRain = { Name = "Honey Rain", Color = Color3.fromRGB(255, 170, 30) },

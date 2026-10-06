@@ -113,7 +113,7 @@ function Events:_build()
 	ui.Title, ui.TitleStroke = outlined({
 		Name = "Title",
 		Position = UDim2.new(0, 78, 0.1, 0),
-		Size = UDim2.new(1, -190, 0.44, 0),
+		Size = UDim2.new(1, -215, 0.44, 0),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		ZIndex = 24,
 		Parent = banner,
@@ -122,7 +122,7 @@ function Events:_build()
 	ui.Sub, ui.SubStroke = outlined({
 		Name = "Field",
 		Position = UDim2.new(0, 80, 0.53, 0),
-		Size = UDim2.new(1, -190, 0.2, 0),
+		Size = UDim2.new(1, -215, 0.2, 0),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		ZIndex = 24,
 		Parent = banner,
@@ -195,7 +195,7 @@ function Events:_setExpanded(on: boolean)
 	local size = on and EXPANDED or COMPACT
 	tween(ui.Banner, 0.45, { Size = UDim2.fromOffset(size.X, size.Y) }, Enum.EasingStyle.Back)
 	ui.Sub.Visible = on
-	ui.Title.Size = on and UDim2.new(1, -190, 0.44, 0) or UDim2.new(1, -190, 0.6, 0)
+	ui.Title.Size = on and UDim2.new(1, -215, 0.44, 0) or UDim2.new(1, -205, 0.6, 0)
 	ui.Title.Position = on and UDim2.new(0, 78, 0.1, 0) or UDim2.new(0, 72, 0.08, 0)
 	ui.Timer.Size = on and UDim2.new(0, 100, 0.48, 0) or UDim2.new(0, 90, 0.6, 0)
 	ui.Track.Size = on and UDim2.new(1, -36, 0.13, 0) or UDim2.new(1, -36, 0.14, 0)
