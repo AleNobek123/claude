@@ -93,6 +93,21 @@ function ShopService:GiveTool(player: Player)
 	end
 end
 
+-- every pack is scaled to the same wearable size (some generated meshes came out huge)
+local PACK_HEIGHT = 2.3
+local PACK_MAX = Vector3.new(2.4, 2.5, 1.7)
+
+local function fallbackBackpack(): Model
+	local model = Instance.new("Model")
+	local main = Instance.new("Part")
+	main.Name = "Main"
+	main.Size = Vector3.new(1.6, 2, 0.9)
+	main:SetAttribute("Tint", true)
+	main.Parent = model
+	model.PrimaryPart = main
+	return model
+end
+
 function ShopService:GiveBackpack(player: Player)
 	local data = S.DataService:Get(player)
 	local character = player.Character
@@ -105,9 +120,18 @@ function ShopService:GiveBackpack(player: Player)
 		old:Destroy()
 	end
 	local def = Config.BackpackById[data.Backpack] or Config.Backpacks[1]
-	-- procedural pack: guaranteed colours, a proper back plate and straps, one silhouette per style
-	local model = GearModels.Backpack(def)
+	local folder = assets("Backpacks")
+	local template = folder and (folder:FindFirstChild(def.Id) or folder:FindFirstChild(def.Shape))
+	local model = template and template:Clone() or fallbackBackpack()
 	model.Name = "BeeBackpack"
+	tint(model, def.Color)
+	local yaw = model:GetAttribute("Yaw") or 0
+	model:PivotTo(CFrame.Angles(0, yaw, 0))
+	local _, size = model:GetBoundingBox()
+	local fit = math.min(PACK_HEIGHT / size.Y, PACK_MAX.X / size.X, PACK_MAX.Y / size.Y, PACK_MAX.Z / size.Z)
+	if math.abs(fit - 1) > 0.03 then
+		model:ScaleTo(model:GetScale() * fit)
+	end
 	local main = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
 	for _, part in model:GetDescendants() do
 		if part:IsA("BasePart") then
@@ -126,12 +150,11 @@ function ShopService:GiveBackpack(player: Player)
 	end
 	-- sit on the torso's back attachment; meshes are rounded and carry straps in front, so the
 	-- pack is pulled in by part of its depth to touch the back instead of floating behind it
-	local _, extents = model:GetBoundingBox() -- oriented to the upright pivot, not the rotated Main
-	local depth = extents.Z
+	local depth = model:GetExtentsSize().Z
 	local back = torso:FindFirstChild("BodyBackAttachment")
 	local anchor = back and back.WorldCFrame or torso.CFrame * CFrame.new(0, 0, torso.Size.Z / 2)
-	local hug = depth * (model:GetAttribute("Hug") or 0.12)
-	model:PivotTo(CFrame.new(anchor.Position) * torso.CFrame.Rotation * CFrame.new(0, 0.05, depth / 2 - hug) * CFrame.Angles(0, model:GetAttribute("Yaw") or 0, 0))
+	local hug = depth * (model:GetAttribute("Hug") or 0.32)
+	model:PivotTo(CFrame.new(anchor.Position) * torso.CFrame.Rotation * CFrame.new(0, 0.05, depth / 2 - hug) * CFrame.Angles(0, yaw, 0))
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0 = torso
 	weld.Part1 = main

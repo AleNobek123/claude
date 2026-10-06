@@ -6,6 +6,7 @@
 	Odds are always visible before any purchase (Roblox policy for random items).
 ]]
 
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -238,6 +239,20 @@ function Eggs:_showDetail(id: string, chance: number)
 	end
 end
 
+local lastLeft, lastGrid = "", ""
+local function signatures(data)
+	local eggs, codex = {}, {}
+	for id, count in data.Eggs or {} do
+		table.insert(eggs, id .. count)
+	end
+	for id in data.Codex or {} do
+		table.insert(codex, id)
+	end
+	table.sort(eggs)
+	table.sort(codex)
+	return table.concat(eggs, ",") .. "|" .. HttpService:JSONEncode(data.Pity or {}), selected .. "|" .. table.concat(codex, ",")
+end
+
 function Eggs:_render()
 	local data = C.State.Data
 	if not data or not left then
@@ -245,6 +260,7 @@ function Eggs:_render()
 	end
 	self:_renderLeft(data)
 	self:_renderGrid(data)
+	lastLeft, lastGrid = signatures(data)
 end
 
 function Eggs:Start()
@@ -282,9 +298,19 @@ function Eggs:Start()
 		detail.Visible = false
 		self:_render()
 	end
-	C.State:OnChange({ "Eggs", "Pity", "Bees", "Codex" }, function()
-		if UI.Current == "Eggs" then
-			self:_renderLeft(C.State.Data)
+	-- re-render only when what the panel shows changed (bee level-ups also touch "Bees")
+	C.State:OnChange({ "Eggs", "Pity", "Codex" }, function(data)
+		if UI.Current ~= "Eggs" or not data then
+			return
+		end
+		local leftSig, gridSig = signatures(data)
+		if leftSig ~= lastLeft then
+			lastLeft = leftSig
+			self:_renderLeft(data)
+		end
+		if gridSig ~= lastGrid then
+			lastGrid = gridSig
+			self:_renderGrid(data)
 		end
 	end)
 end

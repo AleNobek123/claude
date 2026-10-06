@@ -732,15 +732,15 @@ local function buildHive(index: number, hivesFolder)
 			cell.Name = "Cell_" .. slot
 			cell.Size = cellMesh.Size * scale
 			cell.CFrame = facing(pos) * cellRel.Rotation
-			cell.Color = Color3.fromRGB(92, 64, 36)
-			cell.Transparency = 0.35
+			cell.Color = Color3.fromRGB(122, 84, 48)
+			cell.Transparency = 0
 			cell.Material = Enum.Material.SmoothPlastic
 			cell.Anchored = true
 			cell.CanCollide = false
 			cell:SetAttribute("Slot", slot)
 			cell.Parent = cells
 		else
-			part({ Name = "Cell_" .. slot, Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.8, diameter, diameter), CFrame = CFrame.new(pos) * CFrame.Angles(0, math.pi / 2, 0), Color = Color3.fromRGB(92, 64, 36), Transparency = 0.35, Attributes = { Slot = slot }, Parent = cells })
+			part({ Name = "Cell_" .. slot, Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.8, diameter, diameter), CFrame = CFrame.new(pos) * CFrame.Angles(0, math.pi / 2, 0), Color = Color3.fromRGB(122, 84, 48), Attributes = { Slot = slot }, Parent = cells })
 		end
 	end
 

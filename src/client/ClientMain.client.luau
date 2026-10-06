@@ -29,6 +29,7 @@ local ORDER = {
 	"MonsterRenderer",
 	"Collector",
 	"Events",
+	"WorldClock",
 	"HoneyFx",
 	"HatchCutscene",
 	"Nests",

@@ -58,6 +58,11 @@ local function outlined(props, stroke: Color3, thickness: number)
 	return label, s
 end
 
+-- current/next event as last sent by the server (world clock HUD reads it)
+function Events:GetState()
+	return state
+end
+
 function Events:Init(controllers)
 	C = controllers
 	UI = C.UI

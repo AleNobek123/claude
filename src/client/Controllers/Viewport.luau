@@ -96,19 +96,72 @@ function Viewport.Clone(folderName: string, name: string): Model?
 	return clone
 end
 
+-- A viewport is worth animating only if it is really on screen: every ancestor visible,
+-- its ScreenGui enabled and (inside scrolling lists) scrolled into view.
+local function onScreen(vp: ViewportFrame): boolean
+	if not vp.Visible or vp.AbsoluteSize.X <= 4 then
+		return false
+	end
+	local pos, size = vp.AbsolutePosition, vp.AbsoluteSize
+	local node = vp.Parent
+	while node do
+		if node:IsA("LayerCollector") then
+			return node.Enabled
+		elseif node:IsA("GuiObject") then
+			if not node.Visible then
+				return false
+			end
+			if node:IsA("ScrollingFrame") then
+				local wp, ws = node.AbsolutePosition, node.AbsoluteSize
+				if pos.Y + size.Y < wp.Y or pos.Y > wp.Y + ws.Y or pos.X + size.X < wp.X or pos.X > wp.X + ws.X then
+					return false
+				end
+			end
+		end
+		node = node.Parent
+	end
+	return false
+end
+
+-- Re-rendering a viewport is expensive, so at most BUDGET of them move per frame (round
+-- robin). Poses come from the clock, so motion keeps the same speed however many are open.
+local BUDGET = 8
+local visible = {}
+local cursor = 0
+local lastScan = 0
+
+local function pose(entry, t: number)
+	local model = entry.Model
+	local base = entry.Base
+	if entry.Mode == "spin" then
+		model:PivotTo(base * CFrame.Angles(0, t * 0.9, 0))
+	elseif entry.Mode == "float" then
+		model:PivotTo(base * CFrame.new(0, math.sin(t * 2 + entry.Phase) * 0.12, 0) * CFrame.Angles(0, math.sin(t * 0.8 + entry.Phase) * 0.35, math.sin(t * 1.6 + entry.Phase) * 0.06))
+	elseif entry.Mode == "sleep" then
+		model:PivotTo(base * CFrame.new(0, math.sin(t * 1.4 + entry.Phase) * 0.04, 0) * CFrame.Angles(math.rad(8 + math.sin(t * 1.4 + entry.Phase) * 3), 0, 0))
+	end
+end
+
 RunService.RenderStepped:Connect(function()
 	local t = os.clock()
-	for vp, entry in animated do
-		if vp.Parent and vp.Visible and vp.AbsoluteSize.X > 4 then
-			local model = entry.Model
-			local base = entry.Base
-			if entry.Mode == "spin" then
-				model:PivotTo(base * CFrame.Angles(0, t * 0.9, 0))
-			elseif entry.Mode == "float" then
-				model:PivotTo(base * CFrame.new(0, math.sin(t * 2 + entry.Phase) * 0.12, 0) * CFrame.Angles(0, math.sin(t * 0.8 + entry.Phase) * 0.35, math.sin(t * 1.6 + entry.Phase) * 0.06))
-			elseif entry.Mode == "sleep" then
-				model:PivotTo(base * CFrame.new(0, math.sin(t * 1.4 + entry.Phase) * 0.04, 0) * CFrame.Angles(math.rad(8 + math.sin(t * 1.4 + entry.Phase) * 3), 0, 0))
+	if t - lastScan > 0.2 then
+		lastScan = t
+		table.clear(visible)
+		for vp, entry in animated do
+			if vp.Parent and onScreen(vp) then
+				table.insert(visible, entry)
 			end
+		end
+	end
+	local count = #visible
+	if count == 0 then
+		return
+	end
+	for _ = 1, math.min(BUDGET, count) do
+		cursor = cursor % count + 1
+		local entry = visible[cursor]
+		if entry.Model.Parent then
+			pose(entry, t)
 		end
 	end
 end)

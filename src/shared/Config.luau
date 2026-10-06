@@ -169,20 +169,20 @@ Config.Collectors = EconomicScaling.Build("Collectors", {
 
 -- Backpacks are procedural (Shared.GearModels): Style = silhouette, Color/Accent/Material = look
 Config.Backpacks = EconomicScaling.Build("Backpacks", {
-	{ Id = "Pouch", Name = "Pouch", Style = "Pouch", Color = Color3.fromRGB(176, 120, 72) },
-	{ Id = "Jar", Name = "Honey Jar", Style = "Jar", Color = Color3.fromRGB(220, 240, 255), Accent = Color3.fromRGB(200, 150, 90) },
-	{ Id = "Canister", Name = "Canister", Style = "Canister", Color = Color3.fromRGB(90, 180, 100), Accent = Color3.fromRGB(255, 220, 60) },
-	{ Id = "Satchel", Name = "Satchel", Style = "Satchel", Color = Color3.fromRGB(130, 80, 190), Accent = Color3.fromRGB(255, 210, 90) },
-	{ Id = "HivePack", Name = "Hive Pack", Style = "Skep", Color = Color3.fromRGB(240, 180, 60), Accent = Color3.fromRGB(255, 220, 120) },
-	{ Id = "PorcelainTank", Name = "Porcelain Tank", Style = "Tank", Color = Color3.fromRGB(240, 244, 252), Accent = Color3.fromRGB(80, 130, 230) },
-	{ Id = "RoyalReservoir", Name = "Royal Reservoir", Style = "Twin", Color = Color3.fromRGB(255, 130, 190), Accent = Color3.fromRGB(255, 210, 80) },
-	{ Id = "CrystalJar", Name = "Crystal Jar", Style = "Jar", Color = Color3.fromRGB(150, 235, 255), Accent = Color3.fromRGB(120, 200, 255), Material = Enum.Material.Glass },
-	{ Id = "LavaCanister", Name = "Lava Canister", Style = "Canister", Color = Color3.fromRGB(60, 40, 40), Accent = Color3.fromRGB(255, 100, 20), Material = Enum.Material.Basalt },
-	{ Id = "ShadowSatchel", Name = "Shadow Satchel", Style = "Satchel", Color = Color3.fromRGB(45, 35, 70), Accent = Color3.fromRGB(170, 90, 255) },
-	{ Id = "FrostHive", Name = "Frost Hive Pack", Style = "Skep", Color = Color3.fromRGB(190, 235, 255), Accent = Color3.fromRGB(240, 250, 255), Material = Enum.Material.Ice },
-	{ Id = "GoldenTank", Name = "Golden Tank", Style = "Tank", Color = Color3.fromRGB(255, 200, 60), Accent = Color3.fromRGB(255, 245, 200), Material = Enum.Material.Foil },
-	{ Id = "GalaxyReservoir", Name = "Galaxy Reservoir", Style = "Twin", Color = Color3.fromRGB(80, 40, 170), Accent = Color3.fromRGB(120, 230, 255), Material = Enum.Material.Glass },
-	{ Id = "InfinityPack", Name = "Infinity Pack", Style = "Tank", Color = Color3.fromRGB(255, 250, 225), Accent = Color3.fromRGB(255, 120, 220), Material = Enum.Material.Neon },
+	{ Id = "Pouch", Name = "Pouch", Shape = "Pouch", Color = Color3.fromRGB(196, 150, 100) },
+	{ Id = "Jar", Name = "Honey Jar", Shape = "Canister", Color = Color3.fromRGB(200, 230, 255) },
+	{ Id = "Canister", Name = "Canister", Shape = "Canister", Color = Color3.fromRGB(150, 190, 120) },
+	{ Id = "Satchel", Name = "Satchel", Shape = "Pouch", Color = Color3.fromRGB(120, 90, 160) },
+	{ Id = "HivePack", Name = "Hive Pack", Shape = "Tank", Color = Color3.fromRGB(255, 190, 40) },
+	{ Id = "PorcelainTank", Name = "Porcelain Tank", Shape = "Tank", Color = Color3.fromRGB(235, 240, 250) },
+	{ Id = "RoyalReservoir", Name = "Royal Reservoir", Shape = "Tank", Color = Color3.fromRGB(255, 120, 170) },
+	{ Id = "CrystalJar", Name = "Crystal Jar", Shape = "Canister", Model = "Jar", Variant = { Color = Color3.fromRGB(150, 235, 255), Material = Enum.Material.Glass } },
+	{ Id = "LavaCanister", Name = "Lava Canister", Shape = "Canister", Model = "Canister", Variant = { Color = Color3.fromRGB(255, 90, 20), Material = Enum.Material.Neon } },
+	{ Id = "ShadowSatchel", Name = "Shadow Satchel", Shape = "Pouch", Model = "Satchel", Variant = { Color = Color3.fromRGB(70, 40, 110), Material = Enum.Material.Glass } },
+	{ Id = "FrostHive", Name = "Frost Hive Pack", Shape = "Tank", Model = "HivePack", Variant = { Color = Color3.fromRGB(190, 235, 255), Material = Enum.Material.Ice } },
+	{ Id = "GoldenTank", Name = "Golden Tank", Shape = "Tank", Model = "PorcelainTank", Variant = { Color = Color3.fromRGB(255, 205, 60), Material = Enum.Material.Foil } },
+	{ Id = "GalaxyReservoir", Name = "Galaxy Reservoir", Shape = "Tank", Model = "RoyalReservoir", Variant = { Color = Color3.fromRGB(140, 60, 255), Material = Enum.Material.Neon } },
+	{ Id = "InfinityPack", Name = "Infinity Pack", Shape = "Pouch", Model = "Pouch", Variant = { Color = Color3.fromRGB(255, 240, 140), Material = Enum.Material.Neon } },
 })
 
 -- Boots: walk-speed multiplier (Humanoid.WalkSpeed = BaseWalkSpeed * Speed)
@@ -293,8 +293,8 @@ Config.Monsters = {
 
 -- Epic boss encounters: one world boss at a time, announced to everyone
 Config.Bosses = {
-	Interval = 600, -- seconds between bosses
-	StudioInterval = 150,
+	Interval = 1200, -- seconds between bosses
+	StudioInterval = 480,
 	Lifetime = 300, -- escapes if not defeated in time
 	Types = { "KingBeetle", "StumpSnail" },
 	Fields = { "Clover", "Rose", "Bluebell", "Pumpkin", "Cactus", "Crystal" },
@@ -319,8 +319,8 @@ Config.MonsterSpawns = {
 -- Global events ------------------------------------------------------------------------
 
 Config.Events = {
-	Interval = 900, -- one event every 15 minutes, aligned to the clock
-	StudioInterval = 180, -- faster cycle while testing in Studio
+	Interval = 1800, -- one event every 30 minutes, aligned to the clock
+	StudioInterval = 600, -- faster cycle while testing in Studio
 	Warning = 60,
 	Duration = 180,
 	Multiplier = 5,

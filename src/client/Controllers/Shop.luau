@@ -22,6 +22,7 @@ local Juice
 local tab = "Collector"
 local list: ScrollingFrame
 local tabButtons = {}
+local priceButtons = {} -- buy buttons of the current tab: { Button, Price, Unlocked, Affordable }
 
 local TABS = {
 	{ Id = "Collector", Icon = "Pollen", Label = "Tools", Color = Color3.fromRGB(255, 140, 36), List = "Collectors", Owned = "OwnedCollectors", Equipped = "Collector" },
@@ -148,6 +149,7 @@ function Shop:_render()
 			child:Destroy()
 		end
 	end
+	table.clear(priceButtons)
 	for id, button in tabButtons do
 		local info = TAB_BY_ID[id]
 		UI.SetButtonColor(button, id == tab and info.Color or info.Color:Lerp(Color3.fromRGB(230, 220, 205), 0.6))
@@ -177,7 +179,7 @@ function Shop:_render()
 		if tab == "Boots" then
 			model = bootModel(item)
 		elseif tab == "Backpack" then
-			model = GearModels.Backpack(item)
+			model = Viewport.Clone("Backpacks", item.Id) or Viewport.Clone("Backpacks", item.Shape)
 		else
 			model = Viewport.Clone("Collectors", item.Id) or Viewport.Clone("Collectors", item.Shape)
 		end
@@ -198,6 +200,8 @@ function Shop:_render()
 			local previous = items[i - 1]
 			local unlocked = not previous or owned[previous.Id]
 			local affordable = (data.Honey or 0) >= item.Price
+			local entry = { Price = item.Price, Unlocked = unlocked, Affordable = affordable }
+			table.insert(priceButtons, entry)
 			button = UI.Button({
 				Text = unlocked and Format.Short(item.Price) or "LOCKED",
 				Icon = unlocked and "Honey" or "Lock",
@@ -208,7 +212,7 @@ function Shop:_render()
 				MaxTextSize = 18,
 				Parent = frame,
 			}, function()
-				if unlocked and affordable then
+				if unlocked and (C.State.Data.Honey or 0) >= item.Price then
 					Net.Event("Buy"):FireServer(tab, item.Id)
 					C.Sound:Play("Purchase")
 				else
@@ -218,6 +222,18 @@ function Shop:_render()
 					end
 				end
 			end)
+			entry.Button = button
+		end
+	end
+end
+
+-- honey changed: recolour price buttons in place instead of rebuilding every card
+function Shop:_updateAffordable(honey: number)
+	for _, entry in priceButtons do
+		local affordable = honey >= entry.Price
+		if entry.Button and entry.Unlocked and affordable ~= entry.Affordable then
+			entry.Affordable = affordable
+			UI.SetButtonColor(entry.Button, affordable and UI.Colors.Honey or Color3.fromRGB(200, 180, 150))
 		end
 	end
 end
@@ -264,7 +280,7 @@ function Shop:Start()
 			table.insert(parts, tostring(data[info.Equipped]))
 			for _, item in Config[info.List] do
 				local owned = data[info.Owned] and data[info.Owned][item.Id]
-				table.insert(parts, owned and "o" or ((data.Honey or 0) >= item.Price and "a" or "-"))
+				table.insert(parts, owned and "o" or "-")
 			end
 		end
 		return table.concat(parts, "|")
@@ -277,6 +293,8 @@ function Shop:Start()
 		if sig ~= lastSignature then
 			lastSignature = sig
 			self:_render()
+		else
+			self:_updateAffordable(data.Honey or 0)
 		end
 	end)
 end

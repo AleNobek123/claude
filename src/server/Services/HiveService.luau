@@ -22,7 +22,7 @@ local Notify = require(script.Parent.Parent.Util.Notify)
 local HiveService = {}
 HiveService.Name = "HiveService"
 
-local LOCKED_COLOR = Color3.fromRGB(92, 64, 36)
+local LOCKED_COLOR = Color3.fromRGB(122, 84, 48)
 local EMPTY_COLOR = Color3.fromRGB(255, 205, 90)
 
 local S
@@ -132,7 +132,7 @@ function HiveService:RefreshCells(player: Player)
 				cell.Transparency = 0
 			else
 				cell.Color = LOCKED_COLOR
-				cell.Transparency = 0.35
+				cell.Transparency = 0 -- opaque: translucent cells showed dark see-through patches over the hive
 			end
 			cell.Material = Enum.Material.SmoothPlastic
 		end
@@ -143,7 +143,7 @@ end
 local function resetCells(hive)
 	for _, cell in hive.Cells do
 		cell.Color = LOCKED_COLOR
-		cell.Transparency = 0.35
+		cell.Transparency = 0 -- opaque: translucent cells showed dark see-through patches over the hive
 		cell:SetAttribute("BeeId", nil)
 		cell:SetAttribute("Level", nil)
 		cell:SetAttribute("Mutation", nil)

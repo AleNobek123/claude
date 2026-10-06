@@ -647,6 +647,17 @@
    ],
    "class": "ModuleScript",
    "file": "src/client/Controllers/VipTags.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "WorldClock"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/WorldClock.luau"
   }
  ]
 }
