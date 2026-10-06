@@ -1,7 +1,8 @@
 --[[
 	FixDecor (Studio edit-time tool, run from the Command Bar)
 	Applies decor fixes to the already built map, no rebuild needed (BuildMap does the same):
-	  - Mushroom Hollow's giant mushrooms become the Blender mushroom scaled up (dots stay on the cap)
+	  - Mushroom Hollow's giant mushrooms become the Blender mushroom scaled up (dots stay on the cap),
+	    and caps that overlap are shrunk to fit (or removed when that would make them tiny)
 	  - nest display eggs are NEST_EGG_HEIGHT studs tall (they were too small for the nests)
 	Safe to run more than once. Save / publish the place afterwards.
 ]]
@@ -9,7 +10,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
-local NEST_EGG_HEIGHT = 5.5
+local NEST_EGG_HEIGHT = 7.5
 
 local function raw(name: string): Model?
 	local assets = ReplicatedStorage:FindFirstChild("Assets")
@@ -108,6 +109,41 @@ local function rebuild(old: Model): boolean
 	return true
 end
 
+-- caps never grow into each other: biggest first, each next one shrinks to fit or goes away
+local GAP = 1
+local function spaceOut(): (number, number)
+	local list = {}
+	for _, obj in Workspace:GetDescendants() do
+		if obj:IsA("Model") and obj.Name == "MushroomProp" and obj:GetAttribute("Giant") then
+			local _, size = obj:GetBoundingBox()
+			table.insert(list, { Model = obj, Pos = obj:GetPivot().Position, Radius = math.max(size.X, size.Z) / 2 })
+		end
+	end
+	table.sort(list, function(a, b)
+		return a.Radius > b.Radius
+	end)
+	local kept, shrunk, removed = {}, 0, 0
+	for _, entry in list do
+		local allowed = entry.Radius
+		for _, k in kept do
+			local d = Vector3.new(entry.Pos.X - k.Pos.X, 0, entry.Pos.Z - k.Pos.Z).Magnitude
+			allowed = math.min(allowed, d - k.Radius - GAP)
+		end
+		if allowed >= entry.Radius then
+			table.insert(kept, entry)
+		elseif allowed >= entry.Radius * 0.55 then
+			entry.Model:ScaleTo(entry.Model:GetScale() * allowed / entry.Radius) -- pivot = stem foot
+			entry.Radius = allowed
+			table.insert(kept, entry)
+			shrunk += 1
+		else
+			entry.Model:Destroy()
+			removed += 1
+		end
+	end
+	return shrunk, removed
+end
+
 return function()
 	local mushrooms, eggs = 0, 0
 	for _, obj in Workspace:GetDescendants() do
@@ -121,5 +157,6 @@ return function()
 			eggs += 1
 		end
 	end
-	return `{mushrooms} mushrooms rebuilt{raw("Mushroom") and " (Blender model)" or " (parts)"}, {eggs} nest eggs resized`
+	local shrunk, removed = spaceOut()
+	return `{mushrooms} mushrooms rebuilt{raw("Mushroom") and " (Blender model)" or " (parts)"}, {shrunk} shrunk / {removed} removed so none overlap, {eggs} nest eggs resized`
 end

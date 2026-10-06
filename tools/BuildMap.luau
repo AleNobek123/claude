@@ -847,7 +847,7 @@ end
 
 -- Golden Nests ----------------------------------------------------------------------------------------------
 
-local NEST_EGG_HEIGHT = 5.5
+local NEST_EGG_HEIGHT = 7.5
 
 local function buildNests(nestsFolder)
 	local eggTemplate = ReplicatedStorage:FindFirstChild("Assets")
@@ -1169,6 +1169,7 @@ local function themeDecor(decor: Instance, def, info, rng: Random)
 	local inner = def.Tiles * Config.Tiles.Size / 2 + 4
 	local outer = info.Size / 2 - 7
 	local placed, attempts = 0, 0
+	local spots = {} -- { Vector3, radius } of props already standing: props never grow into each other
 	while placed < 26 and attempts < 400 do
 		attempts += 1
 		local x = rng:NextNumber(-outer, outer)
@@ -1178,8 +1179,22 @@ local function themeDecor(decor: Instance, def, info, rng: Random)
 		-- the flower bed and the ramp entrance stay clear
 		local entry = (Vector3.new(pos.X, 0, pos.Z) - Vector3.new(info.Edge.X, 0, info.Edge.Z)).Magnitude
 		if d > inner and entry > 18 then
-			themeProp(decor, info.Theme, CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0), rng:NextNumber(0.9, 1.4), rng)
-			placed += 1
+			local prop = themeProp(decor, info.Theme, CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0), rng:NextNumber(0.9, 1.4), rng)
+			local _, size = prop:GetBoundingBox()
+			local radius = math.max(size.X, size.Z) / 2
+			local clear = true
+			for _, spot in spots do
+				if (Vector3.new(pos.X - spot[1].X, 0, pos.Z - spot[1].Z)).Magnitude < radius + spot[2] + 1 then
+					clear = false
+					break
+				end
+			end
+			if clear then
+				table.insert(spots, { pos, radius })
+				placed += 1
+			else
+				prop:Destroy()
+			end
 		end
 	end
 end
