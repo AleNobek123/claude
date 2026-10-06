@@ -71,7 +71,8 @@ function Hive:_layout()
 	for slot, cell in cells do
 		local offset = HexGrid.ToOffset(RADIUS, slot, s)
 		cell.Button.Size = UDim2.fromOffset(s * math.sqrt(3) * 0.98, s * 2 * 0.98)
-		cell.Button.Position = UDim2.new(0.5, offset.X, 0.5, offset.Y)
+		-- mirrored so the panel matches the real hive as seen from its pad (world x = -offset.X, up = +Y)
+		cell.Button.Position = UDim2.new(0.5, -offset.X, 0.5, -offset.Y)
 	end
 end
 
@@ -301,10 +302,14 @@ function Hive:_renderDetail(data)
 			child:Destroy()
 		end
 	end
-	if self.DetailViewport then
+	-- keep the 3D preview if the same bee is still selected (rebuilding it restarts its animation)
+	local selectedRecord = selected and data.Bees[tostring(selected)]
+	local detailKey = selectedRecord and `{selected}:{selectedRecord.Id}:{tostring(selectedRecord.Mutation)}` or nil
+	if self.DetailViewport and self.DetailKey ~= detailKey then
 		self.DetailViewport:Destroy()
 		self.DetailViewport = nil
 	end
+	self.DetailKey = detailKey
 	order = 0
 	local list = detail.List
 	local unlocked = unlockedSlots(data)
@@ -338,9 +343,11 @@ function Hive:_renderDetail(data)
 		local stats = bee.Stats
 		local rarity = Config.Rarities[def.Rarity]
 		detail.Preview.Visible = true
-		local model = C.BeeRenderer.Build(record.Id, record.Mutation)
-		if model then
-			self.DetailViewport = Viewport.Model(detail.Preview, model, { Mode = "float", Zoom = 0.85 })
+		if not self.DetailViewport then
+			local model = C.BeeRenderer.Build(record.Id, record.Mutation)
+			if model then
+				self.DetailViewport = Viewport.Model(detail.Preview, model, { Mode = "float", Zoom = 0.85 })
+			end
 		end
 		local title = row(list, 34)
 		UI.Label({ Text = def.Name, Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 26, Parent = title })
@@ -523,9 +530,37 @@ function Hive:Start()
 		moveMode = false
 	end
 
-	C.State:OnChange({ "Bees", "HiveSlots", "Eggs", "Treats", "Serums", "Honey" }, function()
-		if UI.Current == "Hive" then
-			self:Refresh()
+	-- refresh when something the panel shows changes; honey only matters for the unlock price,
+	-- so auto-convert ticks (many per second) no longer rebuild the panel
+	local RELEVANT = { Bees = true, HiveSlots = true, Eggs = true, Treats = true, Serums = true }
+	local queued = false
+	local lastAffordable = nil
+	C.State.Changed:Connect(function(keys)
+		local data = C.State.Data
+		if UI.Current ~= "Hive" or not data then
+			return
+		end
+		local relevant = false
+		for key in keys do
+			if RELEVANT[key] then
+				relevant = true
+			end
+		end
+		if keys.Honey then
+			local affordable = (data.Honey or 0) >= slotPrice(data)
+			if affordable ~= lastAffordable then
+				lastAffordable = affordable
+				relevant = true
+			end
+		end
+		if relevant and not queued then
+			queued = true
+			task.delay(0.25, function()
+				queued = false
+				if UI.Current == "Hive" then
+					self:Refresh()
+				end
+			end)
 		end
 	end)
 	player:GetAttributeChangedSignal("Pass_ExtraSlots"):Connect(function()

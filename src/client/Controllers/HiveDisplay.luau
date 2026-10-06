@@ -51,8 +51,10 @@ function HiveDisplay:_build(hiveIndex: number, slot: number, info)
 	end
 	-- docked copies skip the per-bee lights/smoke (dozens per hive would be expensive)
 	for _, obj in model:GetDescendants() do
-		if obj:IsA("Light") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+		if obj:IsA("Light") or obj:IsA("Smoke") or obj:IsA("Sparkles") or obj:IsA("ParticleEmitter") then
 			obj:Destroy()
+		elseif obj:IsA("BasePart") and (obj.Name == "Bubble" or obj.Name == "Ring") then
+			obj:Destroy() -- oversized accessories would shrink the docked bee
 		end
 	end
 	local _, size = model:GetBoundingBox()

@@ -139,36 +139,61 @@ local function tile(parent: Instance, order: number, item, onClick)
 		Size = UDim2.fromScale(0.7, 0.7),
 		Parent = button,
 	})
-	local tip = UI.Create("TextLabel", {
-		Name = "Tooltip",
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(1, 12, 0.5, 0),
-		Size = UDim2.fromOffset(0, 30),
-		AutomaticSize = Enum.AutomaticSize.X,
-		BackgroundTransparency = 1,
-		Font = UI.Font,
-		TextSize = 22,
-		TextColor3 = Color3.new(1, 1, 1),
-		Text = item.Tooltip,
-		Visible = false,
-		ZIndex = 30,
-		Parent = button,
-	}, { UI.Create("UIStroke", { Color = item.Color:Lerp(Color3.new(0, 0, 0), 0.55), Thickness = 3 }) })
+	-- the tooltip lives on the screen root (shared), so neighbouring tiles never cover it
 	button.MouseEnter:Connect(function()
-		tip.Visible = true
-		tip.TextTransparency = 1
-		TweenService:Create(tip, TweenInfo.new(0.15), { TextTransparency = 0 }):Play()
+		HUD:_showTip(button, item.Tooltip, item.Color)
 	end)
 	button.MouseLeave:Connect(function()
-		tip.Visible = false
+		HUD:_hideTip(button)
 	end)
 	Juice.Bind(button, { Rotate = 4 })
 	button.Activated:Connect(onClick)
 	return button
 end
 
+function HUD:_showTip(button: GuiObject, text: string, color: Color3)
+	local tip = self.Tip
+	if not tip then
+		return
+	end
+	self.TipOwner = button
+	tip.Text = text
+	tip.UIStroke.Color = color:Lerp(Color3.new(0, 0, 0), 0.55)
+	local menu = self.Menu
+	local root = UI:_screen().AbsolutePosition
+	local x = menu.AbsolutePosition.X + menu.AbsoluteSize.X + 14 - root.X
+	local y = button.AbsolutePosition.Y + button.AbsoluteSize.Y / 2 - root.Y
+	tip.Position = UDim2.fromOffset(x, y)
+	tip.Visible = true
+	tip.TextTransparency = 1
+	tip.UIStroke.Transparency = 1
+	TweenService:Create(tip, TweenInfo.new(0.15), { TextTransparency = 0 }):Play()
+	TweenService:Create(tip.UIStroke, TweenInfo.new(0.15), { Transparency = 0 }):Play()
+end
+
+function HUD:_hideTip(button: GuiObject)
+	if self.Tip and self.TipOwner == button then
+		self.Tip.Visible = false
+		self.TipOwner = nil
+	end
+end
+
 function HUD:_build()
 	local screen = UI:_screen()
+	self.Tip = UI.Create("TextLabel", {
+		Name = "MenuTooltip",
+		AnchorPoint = Vector2.new(0, 0.5),
+		Size = UDim2.fromOffset(0, 32),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
+		Font = UI.Font,
+		TextSize = 24,
+		TextColor3 = Color3.new(1, 1, 1),
+		Text = "",
+		Visible = false,
+		ZIndex = 60,
+		Parent = screen,
+	}, { UI.Create("UIStroke", { Thickness = 3 }) })
 
 	-- stats
 	local stats = UI.Create("Frame", {
@@ -380,7 +405,7 @@ end
 function HUD:_refresh(data)
 	local honey = data.Honey or 0
 	local formatter = function(n)
-		return n < 1e6 and Format.Commas(n) or Format.Short(n)
+		return Format.Short(n)
 	end
 	if math.floor(honey) ~= math.floor(shownHoney) then
 		Juice.CountUp(self.HoneyLabel, shownHoney, honey, formatter, 0.35)

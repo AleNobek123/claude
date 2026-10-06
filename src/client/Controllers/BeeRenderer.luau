@@ -22,6 +22,7 @@ local Config = require(Shared.Config)
 local BeeData = require(Shared.BeeData)
 local BeeCodec = require(Shared.BeeCodec)
 local Net = require(Shared.Net)
+local BeeLooks = require(script.Parent.BeeLooks)
 
 local TASK = BeeCodec.Task
 local CULL_DISTANCE = 320
@@ -128,6 +129,9 @@ local function buildModel(def, mutation: string?)
 		smoke.RiseVelocity = 1
 		smoke.Parent = body
 	end
+
+	-- species silhouette: body shape, accessories and aura
+	BeeLooks.Apply(model, def, model:FindFirstChild("Body") or body, true)
 
 	-- offsets from the body; wings remember their hinge for flapping
 	local parts = {}

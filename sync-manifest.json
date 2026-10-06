@@ -76,6 +76,15 @@
    "path": [
     "ReplicatedStorage",
     "Shared",
+    "GearModels"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/GearModels.luau"
+  },
+  {
+   "path": [
+    "ReplicatedStorage",
+    "Shared",
     "HexGrid"
    ],
    "class": "ModuleScript",
@@ -275,6 +284,17 @@
    ],
    "class": "LocalScript",
    "file": "src/client/ClientMain.client.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "BeeLooks"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/BeeLooks.luau"
   },
   {
    "path": [

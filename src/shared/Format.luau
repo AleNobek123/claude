@@ -22,7 +22,10 @@ function Format.Short(n: number): string
 	else
 		text = string.format("%.2f", math.floor(scaled * 100) / 100)
 	end
-	text = text:gsub("%.?0+$", "")
+	-- trim zeros only after a decimal point ("1.40" -> "1.4", but "110" stays "110")
+	if text:find("%.") then
+		text = text:gsub("0+$", ""):gsub("%.$", "")
+	end
 	return text .. SUFFIXES[tier + 1]
 end
 
@@ -32,11 +35,13 @@ function Format.Commas(n: number): string
 	return (formatted:gsub("^,", ""))
 end
 
+-- "4:05" under an hour, "01:10:00" from one hour up
 function Format.Time(seconds: number): string
 	seconds = math.max(0, math.floor(seconds))
-	local m = seconds // 60
-	local s = seconds % 60
-	return string.format("%d:%02d", m, s)
+	if seconds >= 3600 then
+		return string.format("%02d:%02d:%02d", seconds // 3600, (seconds % 3600) // 60, seconds % 60)
+	end
+	return string.format("%d:%02d", seconds // 60, seconds % 60)
 end
 
 function Format.Percent(p: number): string

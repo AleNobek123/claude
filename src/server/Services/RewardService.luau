@@ -269,14 +269,19 @@ function RewardService:Start()
 		end
 		if action == "State" then
 			return true, self:State(player)
-		elseif action == "Daily" then
-			return self:ClaimDaily(player)
-		elseif action == "Playtime" then
-			return self:ClaimPlaytime(player, arg)
-		elseif action == "Social" then
-			return self:Social(player, arg)
 		end
-		return false, "Unknown action"
+		-- claims answer with the fresh hub state so the panel updates immediately
+		local ok, message
+		if action == "Daily" then
+			ok, message = self:ClaimDaily(player)
+		elseif action == "Playtime" then
+			ok, message = self:ClaimPlaytime(player, arg)
+		elseif action == "Social" then
+			ok, message = self:Social(player, arg)
+		else
+			return false, "Unknown action"
+		end
+		return ok, message, self:State(player)
 	end
 	-- Codex entries the player has looked at (drives the "!" badge)
 	self.MarkSeen.OnServerEvent:Connect(function(player, kind, ids)

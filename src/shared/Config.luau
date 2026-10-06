@@ -80,6 +80,26 @@ Config.Fields = {
 		Ground = Color3.fromRGB(82, 150, 110),
 	},
 	{
+		Id = "Pumpkin",
+		Name = "Pumpkin Patch",
+		BeesRequired = 18,
+		Multiplier = 5,
+		Flowers = { "White", "Red" },
+		Center = Vector3.new(-370, 22, 200),
+		Tiles = 22,
+		Ground = Color3.fromRGB(150, 150, 72),
+	},
+	{
+		Id = "Cactus",
+		Name = "Cactus Canyon",
+		BeesRequired = 22,
+		Multiplier = 6.5,
+		Flowers = { "Red", "Blue" },
+		Center = Vector3.new(375, 24, 200),
+		Tiles = 22,
+		Ground = Color3.fromRGB(196, 170, 104),
+	},
+	{
 		Id = "Crystal",
 		Name = "Crystal Peak",
 		BeesRequired = 25,
@@ -88,6 +108,26 @@ Config.Fields = {
 		Center = Vector3.new(210, 42, 410),
 		Tiles = 25,
 		Ground = Color3.fromRGB(120, 150, 170),
+	},
+	{
+		Id = "Mushroom",
+		Name = "Mushroom Hollow",
+		BeesRequired = 29,
+		Multiplier = 10,
+		Flowers = { "Blue", "Red", "White" },
+		Center = Vector3.new(-240, 52, 600),
+		Tiles = 22,
+		Ground = Color3.fromRGB(92, 128, 96),
+	},
+	{
+		Id = "Pine",
+		Name = "Pine Summit",
+		BeesRequired = 33,
+		Multiplier = 13,
+		Flowers = { "White", "Blue" },
+		Center = Vector3.new(230, 68, 620),
+		Tiles = 22,
+		Ground = Color3.fromRGB(86, 140, 100),
 	},
 	{
 		Id = "Royal",
@@ -127,36 +167,37 @@ Config.Collectors = EconomicScaling.Build("Collectors", {
 	{ Id = "RoyalReaper", Name = "Royal Reaper", Shape = "Wand", Model = "GoldenReaper", Variant = { Color = Color3.fromRGB(255, 150, 210), Material = Enum.Material.Foil } },
 })
 
+-- Backpacks are procedural (Shared.GearModels): Style = silhouette, Color/Accent/Material = look
 Config.Backpacks = EconomicScaling.Build("Backpacks", {
-	{ Id = "Pouch", Name = "Pouch", Shape = "Pouch", Color = Color3.fromRGB(196, 150, 100) },
-	{ Id = "Jar", Name = "Jar", Shape = "Canister", Color = Color3.fromRGB(200, 230, 255) },
-	{ Id = "Canister", Name = "Canister", Shape = "Canister", Color = Color3.fromRGB(150, 190, 120) },
-	{ Id = "Satchel", Name = "Satchel", Shape = "Pouch", Color = Color3.fromRGB(120, 90, 160) },
-	{ Id = "HivePack", Name = "Hive Pack", Shape = "Tank", Color = Color3.fromRGB(255, 190, 40) },
-	{ Id = "PorcelainTank", Name = "Porcelain Tank", Shape = "Tank", Color = Color3.fromRGB(235, 240, 250) },
-	{ Id = "RoyalReservoir", Name = "Royal Reservoir", Shape = "Tank", Color = Color3.fromRGB(255, 120, 170) },
-	{ Id = "CrystalJar", Name = "Crystal Jar", Shape = "Canister", Model = "Jar", Variant = { Color = Color3.fromRGB(150, 235, 255), Material = Enum.Material.Glass } },
-	{ Id = "LavaCanister", Name = "Lava Canister", Shape = "Canister", Model = "Canister", Variant = { Color = Color3.fromRGB(255, 90, 20), Material = Enum.Material.Neon } },
-	{ Id = "ShadowSatchel", Name = "Shadow Satchel", Shape = "Pouch", Model = "Satchel", Variant = { Color = Color3.fromRGB(70, 40, 110), Material = Enum.Material.Glass } },
-	{ Id = "FrostHive", Name = "Frost Hive Pack", Shape = "Tank", Model = "HivePack", Variant = { Color = Color3.fromRGB(190, 235, 255), Material = Enum.Material.Ice } },
-	{ Id = "GoldenTank", Name = "Golden Tank", Shape = "Tank", Model = "PorcelainTank", Variant = { Color = Color3.fromRGB(255, 205, 60), Material = Enum.Material.Foil } },
-	{ Id = "GalaxyReservoir", Name = "Galaxy Reservoir", Shape = "Tank", Model = "RoyalReservoir", Variant = { Color = Color3.fromRGB(140, 60, 255), Material = Enum.Material.Neon } },
-	{ Id = "InfinityPack", Name = "Infinity Pack", Shape = "Pouch", Model = "Pouch", Variant = { Color = Color3.fromRGB(255, 240, 140), Material = Enum.Material.Neon } },
+	{ Id = "Pouch", Name = "Pouch", Style = "Pouch", Color = Color3.fromRGB(176, 120, 72) },
+	{ Id = "Jar", Name = "Honey Jar", Style = "Jar", Color = Color3.fromRGB(220, 240, 255), Accent = Color3.fromRGB(200, 150, 90) },
+	{ Id = "Canister", Name = "Canister", Style = "Canister", Color = Color3.fromRGB(90, 180, 100), Accent = Color3.fromRGB(255, 220, 60) },
+	{ Id = "Satchel", Name = "Satchel", Style = "Satchel", Color = Color3.fromRGB(130, 80, 190), Accent = Color3.fromRGB(255, 210, 90) },
+	{ Id = "HivePack", Name = "Hive Pack", Style = "Skep", Color = Color3.fromRGB(240, 180, 60), Accent = Color3.fromRGB(255, 220, 120) },
+	{ Id = "PorcelainTank", Name = "Porcelain Tank", Style = "Tank", Color = Color3.fromRGB(240, 244, 252), Accent = Color3.fromRGB(80, 130, 230) },
+	{ Id = "RoyalReservoir", Name = "Royal Reservoir", Style = "Twin", Color = Color3.fromRGB(255, 130, 190), Accent = Color3.fromRGB(255, 210, 80) },
+	{ Id = "CrystalJar", Name = "Crystal Jar", Style = "Jar", Color = Color3.fromRGB(150, 235, 255), Accent = Color3.fromRGB(120, 200, 255), Material = Enum.Material.Glass },
+	{ Id = "LavaCanister", Name = "Lava Canister", Style = "Canister", Color = Color3.fromRGB(60, 40, 40), Accent = Color3.fromRGB(255, 100, 20), Material = Enum.Material.Basalt },
+	{ Id = "ShadowSatchel", Name = "Shadow Satchel", Style = "Satchel", Color = Color3.fromRGB(45, 35, 70), Accent = Color3.fromRGB(170, 90, 255) },
+	{ Id = "FrostHive", Name = "Frost Hive Pack", Style = "Skep", Color = Color3.fromRGB(190, 235, 255), Accent = Color3.fromRGB(240, 250, 255), Material = Enum.Material.Ice },
+	{ Id = "GoldenTank", Name = "Golden Tank", Style = "Tank", Color = Color3.fromRGB(255, 200, 60), Accent = Color3.fromRGB(255, 245, 200), Material = Enum.Material.Foil },
+	{ Id = "GalaxyReservoir", Name = "Galaxy Reservoir", Style = "Twin", Color = Color3.fromRGB(80, 40, 170), Accent = Color3.fromRGB(120, 230, 255), Material = Enum.Material.Glass },
+	{ Id = "InfinityPack", Name = "Infinity Pack", Style = "Tank", Color = Color3.fromRGB(255, 250, 225), Accent = Color3.fromRGB(255, 120, 220), Material = Enum.Material.Neon },
 })
 
 -- Boots: walk-speed multiplier (Humanoid.WalkSpeed = BaseWalkSpeed * Speed)
 Config.BaseWalkSpeed = 16
 Config.Boots = EconomicScaling.Build("Boots", {
-	{ Id = "FlipFlops", Name = "Flip-Flops", Color = Color3.fromRGB(110, 190, 255) },
-	{ Id = "Sneakers", Name = "Sneakers", Color = Color3.fromRGB(240, 240, 245), Trim = Color3.fromRGB(255, 80, 80) },
-	{ Id = "HikingBoots", Name = "Hiking Boots", Color = Color3.fromRGB(140, 96, 56), Trim = Color3.fromRGB(230, 200, 120) },
-	{ Id = "RainBoots", Name = "Rain Boots", Color = Color3.fromRGB(255, 210, 40), Trim = Color3.fromRGB(60, 60, 70) },
-	{ Id = "SpeedySneakers", Name = "Speedy Sneakers", Color = Color3.fromRGB(80, 220, 120), Trim = Color3.fromRGB(255, 255, 255) },
-	{ Id = "HoneyBoots", Name = "Honey Boots", Color = Color3.fromRGB(255, 170, 30), Trim = Color3.fromRGB(255, 240, 160), Material = Enum.Material.Glass },
-	{ Id = "CloudBoots", Name = "Cloud Boots", Color = Color3.fromRGB(245, 250, 255), Trim = Color3.fromRGB(160, 210, 255), Trail = true },
-	{ Id = "RocketBoots", Name = "Rocket Boots", Color = Color3.fromRGB(230, 60, 60), Trim = Color3.fromRGB(255, 200, 60), Material = Enum.Material.Metal, Trail = true },
-	{ Id = "LightningBoots", Name = "Lightning Boots", Color = Color3.fromRGB(80, 120, 255), Trim = Color3.fromRGB(255, 255, 120), Material = Enum.Material.Neon, Trail = true },
-	{ Id = "RoyalBoots", Name = "Royal Wing Boots", Color = Color3.fromRGB(255, 215, 80), Trim = Color3.fromRGB(255, 120, 200), Material = Enum.Material.Foil, Trail = true },
+	{ Id = "FlipFlops", Style = "FlipFlop", Name = "Flip-Flops", Color = Color3.fromRGB(110, 190, 255) },
+	{ Id = "Sneakers", Style = "Sneaker", Name = "Sneakers", Color = Color3.fromRGB(240, 240, 245), Accent = Color3.fromRGB(255, 80, 80) },
+	{ Id = "HikingBoots", Style = "Hiking", Name = "Hiking Boots", Color = Color3.fromRGB(140, 96, 56), Accent = Color3.fromRGB(230, 200, 120) },
+	{ Id = "RainBoots", Style = "Rain", Name = "Rain Boots", Color = Color3.fromRGB(255, 210, 40), Accent = Color3.fromRGB(60, 60, 70) },
+	{ Id = "SpeedySneakers", Style = "Speedy", Name = "Speedy Sneakers", Color = Color3.fromRGB(80, 220, 120), Accent = Color3.fromRGB(255, 255, 255) },
+	{ Id = "HoneyBoots", Style = "Honey", Name = "Honey Boots", Color = Color3.fromRGB(255, 170, 30), Accent = Color3.fromRGB(255, 240, 160), Material = Enum.Material.Glass },
+	{ Id = "CloudBoots", Style = "Cloud", Name = "Cloud Boots", Color = Color3.fromRGB(245, 250, 255), Accent = Color3.fromRGB(160, 210, 255), Trail = true },
+	{ Id = "RocketBoots", Style = "Rocket", Name = "Rocket Boots", Color = Color3.fromRGB(230, 60, 60), Accent = Color3.fromRGB(255, 200, 60), Material = Enum.Material.Metal, Trail = true },
+	{ Id = "LightningBoots", Style = "Lightning", Name = "Lightning Boots", Color = Color3.fromRGB(80, 120, 255), Accent = Color3.fromRGB(255, 255, 120), Material = Enum.Material.Neon, Trail = true },
+	{ Id = "RoyalBoots", Style = "Royal", Name = "Royal Wing Boots", Color = Color3.fromRGB(255, 215, 80), Accent = Color3.fromRGB(255, 120, 200), Material = Enum.Material.Foil, Trail = true },
 })
 
 -- Conversion -------------------------------------------------------------------
@@ -242,6 +283,9 @@ Config.Monsters = {
 	Ladybug = { Name = "Ladybug", Health = 80, Speed = 8, Drain = 12, DrainRange = 9, Honey = 300, Size = 3.2 },
 	AphidQueen = { Name = "Aphid Queen", Health = 2500, Speed = 4, Drain = 40, DrainRange = 14, Honey = 12000, Size = 7, Boss = true },
 	Mantis = { Name = "Mantis", Health = 220, Speed = 10, Drain = 20, DrainRange = 10, Honey = 900, Size = 3.6, Model = "Aphid", Tint = Color3.fromRGB(110, 220, 90), Scale = 1.7 },
+	Scorpion = { Name = "Scorpion", Health = 600, Speed = 11, Drain = 30, DrainRange = 11, Honey = 2600, Size = 4, Model = "Ladybug", Tint = Color3.fromRGB(205, 130, 60), Scale = 1.6 },
+	CaveSpider = { Name = "Cave Spider", Health = 1400, Speed = 12, Drain = 45, DrainRange = 12, Honey = 6000, Size = 4.4, Model = "Aphid", Tint = Color3.fromRGB(80, 50, 110), Scale = 2.2 },
+	Hornet = { Name = "Hornet", Health = 2600, Speed = 14, Drain = 65, DrainRange = 13, Honey = 11000, Size = 4.6, Model = "Aphid", Tint = Color3.fromRGB(250, 190, 40), Scale = 2 },
 	-- world bosses (see Config.Bosses): huge health pools fought by everyone in the field
 	KingBeetle = { Name = "King Beetle", Health = 12000, Speed = 5, Drain = 60, DrainRange = 16, Honey = 60000, Size = 9, Boss = true, Model = "Ladybug", Tint = Color3.fromRGB(70, 50, 140), Scale = 3, EggReward = "Silver" },
 	StumpSnail = { Name = "Stump Snail", Health = 30000, Speed = 2, Drain = 80, DrainRange = 18, Honey = 150000, Size = 10, Boss = true, Model = "AphidQueen", Tint = Color3.fromRGB(150, 110, 70), Scale = 1.5, EggReward = "Royal" },
@@ -253,7 +297,7 @@ Config.Bosses = {
 	StudioInterval = 150,
 	Lifetime = 300, -- escapes if not defeated in time
 	Types = { "KingBeetle", "StumpSnail" },
-	Fields = { "Clover", "Rose", "Bluebell", "Crystal" },
+	Fields = { "Clover", "Rose", "Bluebell", "Pumpkin", "Cactus", "Crystal", "Mushroom", "Pine" },
 }
 
 Config.MonsterSpawns = {
@@ -265,6 +309,10 @@ Config.MonsterSpawns = {
 		Rose = { "Ladybug" },
 		Bluebell = { "Ladybug", "Aphid", "Mantis" },
 		Crystal = { "Ladybug", "Mantis" },
+		Pumpkin = { "Ladybug", "Mantis" },
+		Cactus = { "Mantis", "Scorpion" },
+		Mushroom = { "Scorpion", "CaveSpider" },
+		Pine = { "CaveSpider", "Hornet" },
 	},
 }
 
@@ -277,7 +325,7 @@ Config.Events = {
 	Duration = 180,
 	Multiplier = 5,
 	ParticipationTime = 30,
-	FieldPool = { "Sunflower", "Clover", "Rose", "Bluebell" },
+	FieldPool = { "Sunflower", "Clover", "Rose", "Bluebell", "Pumpkin", "Cactus" },
 	Types = { "MeteorShower", "AphidInvasion", "GoldenBloom", "HoneyRain" },
 	AphidGoal = 150,
 	MeteorEvery = 2,

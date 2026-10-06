@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
+local GearModels = require(Shared.GearModels)
 local Net = require(Shared.Net)
 local Notify = require(script.Parent.Parent.Util.Notify)
 
@@ -49,16 +50,6 @@ local function fallbackTool(): Tool
 	return tool
 end
 
-local function fallbackBackpack(): Model
-	local model = Instance.new("Model")
-	local main = Instance.new("Part")
-	main.Name = "Main"
-	main.Size = Vector3.new(1.6, 2, 0.9)
-	main:SetAttribute("Tint", true)
-	main.Parent = model
-	model.PrimaryPart = main
-	return model
-end
 
 -- Visuals -------------------------------------------------------------------------------------
 
@@ -114,11 +105,9 @@ function ShopService:GiveBackpack(player: Player)
 		old:Destroy()
 	end
 	local def = Config.BackpackById[data.Backpack] or Config.Backpacks[1]
-	local folder = assets("Backpacks")
-	local template = folder and (folder:FindFirstChild(def.Id) or folder:FindFirstChild(def.Shape))
-	local model = template and template:Clone() or fallbackBackpack()
+	-- procedural pack: guaranteed colours, a proper back plate and straps, one silhouette per style
+	local model = GearModels.Backpack(def)
 	model.Name = "BeeBackpack"
-	tint(model, def.Color)
 	local main = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
 	for _, part in model:GetDescendants() do
 		if part:IsA("BasePart") then
@@ -140,7 +129,7 @@ function ShopService:GiveBackpack(player: Player)
 	local depth = model:GetExtentsSize().Z
 	local back = torso:FindFirstChild("BodyBackAttachment")
 	local anchor = back and back.WorldCFrame or torso.CFrame * CFrame.new(0, 0, torso.Size.Z / 2)
-	local hug = depth * (model:GetAttribute("Hug") or 0.32)
+	local hug = depth * (model:GetAttribute("Hug") or 0.12)
 	model:PivotTo(CFrame.new(anchor.Position) * torso.CFrame.Rotation * CFrame.new(0, 0.05, depth / 2 - hug) * CFrame.Angles(0, model:GetAttribute("Yaw") or 0, 0))
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0 = torso
@@ -149,51 +138,36 @@ function ShopService:GiveBackpack(player: Player)
 	model.Parent = character
 end
 
--- Boots: a stylised shoe shell on each foot (R15 feet or R6 legs) + walk speed from the tier
+-- Boots: one procedural model per foot (Shared.GearModels), welded on, plus walk speed
 local function buildShoe(foot: BasePart, def, r15: boolean): Model
-	local model = Instance.new("Model")
-	model.Name = "BeeBoot"
-	local size = foot.Size
-	local height = r15 and size.Y + 0.12 or 0.7
-	local function piece(name: string, s: Vector3, offset: CFrame, color: Color3, material: Enum.Material?)
-		local p = Instance.new("Part")
-		p.Name = name
-		p.Size = s
-		p.Color = color
-		p.Material = material or Enum.Material.SmoothPlastic
-		p.CanCollide = false
-		p.CanQuery = false
-		p.CanTouch = false
-		p.Massless = true
-		p.CastShadow = false
-		p.TopSurface = Enum.SurfaceType.Smooth
-		p.BottomSurface = Enum.SurfaceType.Smooth
-		p.CFrame = foot.CFrame * offset
-		local weld = Instance.new("WeldConstraint")
-		weld.Part0 = foot
-		weld.Part1 = p
-		weld.Parent = p
-		p.Parent = model
-		return p
+	-- R6 legs are 2 studs tall: build around a virtual foot at the bottom of the leg
+	local size = r15 and foot.Size or Vector3.new(foot.Size.X, 0.6, foot.Size.Z + 0.1)
+	local frame = r15 and foot.CFrame or foot.CFrame * CFrame.new(0, -foot.Size.Y / 2 + 0.3, 0)
+	local model = GearModels.Boot(def, size)
+	for _, p in model:GetChildren() do
+		if p:IsA("BasePart") then
+			local offset = p.CFrame
+			p.CFrame = frame * offset
+			p.Anchored = false
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = foot
+			weld.Part1 = p
+			weld.Parent = p
+		end
 	end
-	local bottom = -size.Y / 2
-	piece("Upper", Vector3.new(size.X + 0.12, height, size.Z + 0.14), CFrame.new(0, bottom + height / 2 - 0.02, 0.02), def.Color, def.Material)
-	piece("Sole", Vector3.new(size.X + 0.18, 0.2, size.Z + 0.3), CFrame.new(0, bottom + 0.06, -0.04), def.Trim or Color3.fromRGB(245, 245, 245))
-	piece("Toe", Vector3.new(size.X + 0.14, height * 0.45, 0.25), CFrame.new(0, bottom + height * 0.25, -(size.Z / 2 + 0.12)), def.Trim or def.Color:Lerp(Color3.new(1, 1, 1), 0.4))
 	if def.Trail then
 		local attachment = Instance.new("Attachment")
-		attachment.Position = Vector3.new(0, bottom, 0.3)
+		attachment.Name = "BeeBootTrail"
+		attachment.Position = Vector3.new(0, -foot.Size.Y / 2, 0.3)
 		attachment.Parent = foot
 		local sparkle = Instance.new("ParticleEmitter")
-		sparkle.Name = "BootTrail"
-		sparkle.Color = ColorSequence.new(def.Trim or def.Color)
+		sparkle.Color = ColorSequence.new(def.Accent or def.Color)
 		sparkle.LightEmission = 0.8
 		sparkle.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 0) })
 		sparkle.Lifetime = NumberRange.new(0.3, 0.6)
 		sparkle.Speed = NumberRange.new(0.5, 1.5)
 		sparkle.Rate = 12
 		sparkle.Parent = attachment
-		attachment.Name = "BeeBootTrail"
 	end
 	return model
 end
@@ -211,9 +185,6 @@ function ShopService:GiveBoots(player: Player)
 		if child.Name == "BeeBoot" or child.Name == "BeeBootTrail" then
 			child:Destroy()
 		end
-	end
-	if def.Tier <= 1 then
-		return -- flip-flops are just the default feet
 	end
 	local r15 = humanoid.RigType == Enum.HumanoidRigType.R15
 	for _, name in r15 and { "LeftFoot", "RightFoot" } or { "Left Leg", "Right Leg" } do

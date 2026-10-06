@@ -2,7 +2,7 @@
 	Events
 	Cinematic banner for the global field event. On every phase change it drops down from the
 	top of the screen (Back easing) in its big form: bold outlined title, field + reward line,
-	animated countdown bar, marquee lights flashing in the event colours and a light sweep.
+	animated countdown bar and a light sweep.
 	After a few seconds it folds into a compact pill that keeps the timer and bar visible.
 	The Aphid Invasion server goal shows as a bar under the banner.
 ]]
@@ -30,7 +30,6 @@ local expanded = false
 
 local EXPANDED = Vector2.new(560, 118)
 local COMPACT = Vector2.new(430, 60)
-local BULBS = 16
 local IDLE_TOP = Color3.fromRGB(255, 250, 235)
 local IDLE_BOTTOM = Color3.fromRGB(250, 230, 190)
 
@@ -102,31 +101,6 @@ function Events:_build()
 		Parent = banner,
 	}, { UI.Corner(20) })
 	ShopJuicer.Shine(banner, { Period = 1.1, Pause = 2.5, Transparency = 0.15 })
-
-	-- marquee bulbs along the top and bottom edges
-	ui.Bulbs = {}
-	for row = 0, 1 do
-		for i = 1, BULBS do
-			local bulb = UI.Create("Frame", {
-				Name = "Bulb",
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(i / (BULBS + 1), row),
-				Size = UDim2.fromOffset(9, 9),
-				BackgroundColor3 = Color3.new(1, 1, 1),
-				ZIndex = 23,
-				Parent = banner,
-			}, { UI.Round() })
-			local glow = UI.Icon("Glow", {
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.5),
-				Size = UDim2.fromScale(3.2, 3.2),
-				ImageTransparency = 0.5,
-				ZIndex = 22,
-				Parent = bulb,
-			})
-			table.insert(ui.Bulbs, { Bulb = bulb, Glow = glow, Index = i + row * BULBS })
-		end
-	end
 
 	ui.Icon = UI.Icon("Lightning", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -303,28 +277,10 @@ function Events:_refresh()
 	end
 end
 
--- Marquee lights: alternating bulbs chase around the banner; faster and rainbow while active
+-- Subtle life on the banner: the countdown spark pulses and the title shimmers while active
 function Events:_animate()
 	local t = os.clock()
 	local phase = state and state.Phase or "Idle"
-	local info = state and Config.EventInfo[state.Type]
-	local color = info and info.Color or UI.Colors.Honey
-	local speed = phase == "Active" and 10 or phase == "Warning" and 6 or 2
-	for _, b in ui.Bulbs do
-		local on = math.floor(t * speed + b.Index) % 2 == 0
-		local c
-		if phase == "Active" then
-			c = Color3.fromHSV(((t * 0.35) + b.Index / #ui.Bulbs) % 1, 0.55, 1)
-		elseif phase == "Warning" then
-			c = on and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(255, 120, 40)
-		else
-			c = color:Lerp(Color3.new(1, 1, 1), 0.5)
-		end
-		b.Bulb.BackgroundColor3 = c
-		b.Bulb.BackgroundTransparency = on and 0 or 0.45
-		b.Glow.ImageColor3 = c
-		b.Glow.ImageTransparency = on and 0.35 or 0.85
-	end
 	-- the bar's leading spark pulses
 	ui.Spark.ImageTransparency = 0.25 + math.sin(t * 8) * 0.2
 	if phase == "Active" then

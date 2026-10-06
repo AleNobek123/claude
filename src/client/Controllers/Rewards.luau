@@ -100,11 +100,15 @@ function Rewards:AnyClaimable(): boolean
 end
 
 local function claim(action: string, arg, source: GuiObject?)
-	local ok, success, message = pcall(function()
+	local ok, success, message, fresh = pcall(function()
 		return Net.Function("Rewards"):InvokeServer(action, arg)
 	end)
 	if not ok then
 		return
+	end
+	if fresh then
+		state = fresh
+		fetchedAt = os.clock()
 	end
 	C.NotificationCenter:Push(message or "", success and "good" or "info")
 	if success then
@@ -113,7 +117,6 @@ local function claim(action: string, arg, source: GuiObject?)
 			ShopJuicer.Burst(source, 14)
 		end
 	end
-	Rewards:_fetch()
 	Rewards:_render()
 end
 

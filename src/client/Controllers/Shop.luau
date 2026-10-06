@@ -12,6 +12,7 @@ local Config = require(Shared.Config)
 local Format = require(Shared.Format)
 local Net = require(Shared.Net)
 local Viewport = require(script.Parent.Viewport)
+local GearModels = require(Shared.GearModels)
 
 local Shop = {}
 
@@ -43,23 +44,9 @@ local function tierColor(tier: number): Color3
 	return Color3.fromHSV(((tier - 1) * 0.071 + 0.08) % 1, 0.5, 1)
 end
 
--- Mini shoe for the boots preview (same shape the server builds on the feet)
+-- Boots preview: the same procedural shoe players wear, on a stand-in foot
 local function bootModel(def): Model
-	local model = Instance.new("Model")
-	local function piece(size: Vector3, cf: CFrame, color: Color3, material: Enum.Material?)
-		local p = Instance.new("Part")
-		p.Size = size
-		p.CFrame = cf
-		p.Color = color
-		p.Material = material or Enum.Material.SmoothPlastic
-		p.Parent = model
-		return p
-	end
-	model.PrimaryPart = piece(Vector3.new(1, 0.9, 1.6), CFrame.new(0, 0.55, 0), def.Color, def.Material)
-	piece(Vector3.new(1.1, 0.22, 1.9), CFrame.new(0, 0.11, -0.05), def.Trim or Color3.fromRGB(245, 245, 245))
-	piece(Vector3.new(1.05, 0.45, 0.3), CFrame.new(0, 0.33, -0.9), def.Trim or def.Color:Lerp(Color3.new(1, 1, 1), 0.4))
-	piece(Vector3.new(1, 0.6, 0.9), CFrame.new(0, 1.2, 0.35), def.Color, def.Material)
-	return model
+	return GearModels.Boot(def, Vector3.new(1, 0.55, 1.5))
 end
 
 local function card(order: number, title: string, tier: number?)
@@ -142,8 +129,9 @@ local function stats(frame: Instance, kind: string, item)
 		statLine(frame, 2, "HexRing", `{item.Radius} stud field radius`)
 		statLine(frame, 3, "Sparkles", `{string.format("%.2f", item.Cooldown)}s per swing`)
 	elseif kind == "Backpack" then
-		statLine(frame, 1, "Backpack", `{Format.Commas(item.Capacity)} pollen capacity`)
-		statLine(frame, 2, "Honey", `{Format.Short(item.Capacity)} honey per trip`)
+		statLine(frame, 1, "Backpack", `{Format.Short(item.Capacity)} pollen capacity`)
+		local previous = Config.Backpacks[item.Tier - 1]
+		statLine(frame, 2, "Sparkles", previous and `+{math.floor((item.Capacity / previous.Capacity - 1) * 100 + 0.5)}% over {previous.Name}` or "Starter bag")
 	elseif kind == "Boots" then
 		statLine(frame, 1, "Lightning", item.Speed > 1 and `+{math.floor((item.Speed - 1) * 100 + 0.5)}% walk speed` or "Normal walk speed")
 		statLine(frame, 2, "Sparkles", item.Trail and "Sparkle trail" or `{math.floor(Config.BaseWalkSpeed * item.Speed * 10 + 0.5) / 10} studs/s`)
@@ -170,7 +158,7 @@ function Shop:_render()
 		for i, count in { 1, 10, 100 } do
 			local frame, preview = card(i, `{count} Treat{count > 1 and "s" or ""}`)
 			UI.Icon("Treat", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.55), Size = UDim2.fromOffset(80, 80), Parent = preview })
-			statLine(frame, 1, "Star", `+{Format.Commas(Config.Levels.TreatXP * count)} bee XP`)
+			statLine(frame, 1, "Star", `+{Format.Short(Config.Levels.TreatXP * count)} bee XP`)
 			UI.Button({ Text = Format.Short(Config.Levels.TreatPrice * count), Icon = "Honey", AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -10), Size = UDim2.new(1, -24, 0, 44), Parent = frame }, function()
 				Net.Event("BuyTreats"):FireServer(count)
 				C.Sound:Play("Purchase")
@@ -188,9 +176,10 @@ function Shop:_render()
 		local model
 		if tab == "Boots" then
 			model = bootModel(item)
+		elseif tab == "Backpack" then
+			model = GearModels.Backpack(item)
 		else
-			local folder = tab == "Collector" and "Collectors" or "Backpacks"
-			model = Viewport.Clone(folder, item.Id) or Viewport.Clone(folder, item.Shape)
+			model = Viewport.Clone("Collectors", item.Id) or Viewport.Clone("Collectors", item.Shape)
 		end
 		if model then
 			Viewport.Model(preview, model, { Mode = "spin", Zoom = 0.95, Pitch = 18 })

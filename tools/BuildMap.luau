@@ -37,7 +37,14 @@ local PLATEAUS = {
 	Bluebell = { Size = 140, RampFrom = Vector3.new(-215, 14, 240), Edge = Vector3.new(-215, 30, 320) },
 	Crystal = { Size = 140, RampFrom = Vector3.new(210, 14, 250), Edge = Vector3.new(210, 42, 340) },
 	Royal = { Size = 116, RampFrom = Vector3.new(0, 0, 265), Edge = Vector3.new(0, 22, 347) },
+	-- outer ring: each climbs from the plateau before it
+	Pumpkin = { Size = 136, RampFrom = Vector3.new(-270, 14, 200), Edge = Vector3.new(-302, 22, 200), Theme = "Pumpkin" },
+	Cactus = { Size = 136, RampFrom = Vector3.new(275, 14, 200), Edge = Vector3.new(307, 24, 200), Theme = "Cactus" },
+	Mushroom = { Size = 136, RampFrom = Vector3.new(-240, 30, 460), Edge = Vector3.new(-240, 52, 532), Theme = "Mushroom" },
+	Pine = { Size = 136, RampFrom = Vector3.new(230, 42, 480), Edge = Vector3.new(230, 68, 552), Theme = "Pine" },
 }
+-- the world's rim: hills ring around this point
+local WORLD_CENTER = Vector3.new(0, 0, 260)
 
 -- Walkways (part-built, so their edges stay perfectly straight)
 local PATHS = {
@@ -279,18 +286,18 @@ local function buildTerrain()
 	Terrain.WaterReflectance = 0.3
 
 	-- ground (top surface at y = 0). LeafyGrass has no animated blades, so nothing clips paths.
-	fillBlock(CFrame.new(0, -10, 160), Vector3.new(1200, 20, 1200), Enum.Material.LeafyGrass)
+	fillBlock(CFrame.new(WORLD_CENTER.X, -10, WORLD_CENTER.Z), Vector3.new(1640, 20, 1640), Enum.Material.LeafyGrass)
 	-- rolling outer hills and rocky outcrops around the playable area
 	local rng = Random.new(7)
-	for i = 1, 60 do
-		local angle = (i / 60) * math.pi * 2 + rng:NextNumber(-0.04, 0.04)
-		local r = rng:NextNumber(470, 540)
-		fillBall(Vector3.new(math.cos(angle) * r, rng:NextNumber(-22, -6), 180 + math.sin(angle) * r), rng:NextNumber(40, 72), Enum.Material.LeafyGrass)
+	for i = 1, 80 do
+		local angle = (i / 80) * math.pi * 2 + rng:NextNumber(-0.03, 0.03)
+		local r = rng:NextNumber(612, 670)
+		fillBall(WORLD_CENTER + Vector3.new(math.cos(angle) * r, rng:NextNumber(-22, -6), math.sin(angle) * r), rng:NextNumber(44, 74), Enum.Material.LeafyGrass)
 	end
-	for _ = 1, 18 do
+	for _ = 1, 24 do
 		local angle = rng:NextNumber(0, math.pi * 2)
-		local r = rng:NextNumber(430, 500)
-		fillBall(Vector3.new(math.cos(angle) * r, rng:NextNumber(10, 30), 180 + math.sin(angle) * r), rng:NextNumber(16, 30), Enum.Material.Rock)
+		local r = rng:NextNumber(565, 615)
+		fillBall(WORLD_CENTER + Vector3.new(math.cos(angle) * r, rng:NextNumber(10, 30), math.sin(angle) * r), rng:NextNumber(16, 30), Enum.Material.Rock)
 	end
 	-- plateaus, then ramps (ramps last so they cut cleanly into the cliffs)
 	for fieldId, info in PLATEAUS do
@@ -940,6 +947,14 @@ local function blocked(pos: Vector3): boolean
 			return true
 		end
 	end
+	for fieldId, info in PLATEAUS do
+		-- keep props away from cliff edges (top rim and foot of each plateau)
+		local center = Config.FieldById[fieldId].Center
+		local d = math.max(math.abs(pos.X - center.X), math.abs(pos.Z - center.Z))
+		if d > info.Size / 2 - 7 and d < info.Size / 2 + 9 then
+			return true
+		end
+	end
 	for _, info in PLATEAUS do
 		local a, b = info.RampFrom, info.Edge
 		local ab = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
@@ -974,24 +989,98 @@ local function scatter(decor: Instance, name: string, count: number, minScale: n
 		attempts += 1
 		local pos = Vector3.new(rng:NextNumber(area[1], area[2]), 0, rng:NextNumber(area[3], area[4]))
 		if not blocked(pos) then
-			local y = groundY(pos.X, pos.Z)
-			if y and y > -2 then
-				place(name, CFrame.new(pos.X, y - 0.2, pos.Z) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0), rng:NextNumber(minScale, maxScale), decor)
+			-- only flat grass: no props on cliff faces, ramps, rock outcrops or paths
+			local hit = Workspace:Raycast(Vector3.new(pos.X, 200, pos.Z), Vector3.new(0, -400, 0), rayParams)
+			local flat = hit and hit.Normal.Y > 0.93
+			local grassy = hit and (hit.Material == Enum.Material.LeafyGrass or hit.Material == Enum.Material.Grass)
+			if flat and grassy and hit.Position.Y > -2 then
+				place(name, CFrame.new(pos.X, hit.Position.Y - 0.2, pos.Z) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0), rng:NextNumber(minScale, maxScale), decor)
 				placed += 1
 			end
 		end
 	end
 end
 
+-- Themed props: pumpkins, cacti, giant mushrooms and pines
+local function themeProp(parent: Instance, theme: string, cf: CFrame, scale: number, rng: Random)
+	local m = Instance.new("Model")
+	m.Name = theme .. "Prop"
+	m.Parent = parent
+	local function p(size: Vector3, offset: CFrame, color: Color3, shape: Enum.PartType?, material: Enum.Material?)
+		return part({ Size = size * scale, CFrame = cf * CFrame.new(offset.Position * scale) * offset.Rotation, Color = color, Shape = shape, Material = material or Enum.Material.SmoothPlastic, CanCollide = false, Parent = m })
+	end
+	if theme == "Pumpkin" then
+		local orange = Color3.fromRGB(240, 130, 30):Lerp(Color3.fromRGB(255, 170, 40), rng:NextNumber())
+		for i = 0, 5 do
+			local a = i / 6 * math.pi * 2
+			p(Vector3.new(2.2, 2.6, 2.6), CFrame.new(math.cos(a) * 0.6, 1.2, math.sin(a) * 0.6), orange, Enum.PartType.Ball)
+		end
+		p(Vector3.new(0.4, 0.9, 0.4), CFrame.new(0, 2.6, 0) * CFrame.Angles(0, 0, 0.2), Color3.fromRGB(90, 120, 40))
+		p(Vector3.new(1.2, 0.1, 0.7), CFrame.new(0.6, 2.5, 0) * CFrame.Angles(0, 0, 0.3), Color3.fromRGB(80, 160, 60))
+	elseif theme == "Cactus" then
+		local green = Color3.fromRGB(70, 150, 70)
+		p(Vector3.new(1.6, 7, 1.6), CFrame.new(0, 3.5, 0), green, nil, Enum.Material.Grass)
+		p(Vector3.new(1.6, 1.6, 1.6), CFrame.new(0, 7, 0), green, Enum.PartType.Ball, Enum.Material.Grass)
+		for _, side in { -1, 1 } do
+			local h = 2.5 + rng:NextNumber(0, 1.5)
+			p(Vector3.new(2, 1, 1), CFrame.new(side * 1.3, h, 0), green, nil, Enum.Material.Grass)
+			p(Vector3.new(1, 2.6, 1), CFrame.new(side * 1.9, h + 1.3, 0), green, nil, Enum.Material.Grass)
+			p(Vector3.new(1, 1, 1), CFrame.new(side * 1.9, h + 2.6, 0), green, Enum.PartType.Ball, Enum.Material.Grass)
+		end
+		p(Vector3.new(0.9, 0.9, 0.9), CFrame.new(0, 7.7, 0), Color3.fromRGB(255, 120, 170), Enum.PartType.Ball)
+	elseif theme == "Mushroom" then
+		local cap = rng:NextNumber() > 0.5 and Color3.fromRGB(210, 60, 60) or Color3.fromRGB(150, 90, 220)
+		p(Vector3.new(1.4, 5, 1.4), CFrame.new(0, 2.5, 0), Color3.fromRGB(240, 230, 210))
+		p(Vector3.new(6, 2.4, 6), CFrame.new(0, 5.2, 0), cap, Enum.PartType.Ball)
+		for i = 1, 5 do
+			local a = rng:NextNumber(0, math.pi * 2)
+			p(Vector3.new(0.7, 0.4, 0.7), CFrame.new(math.cos(a) * 1.8, 6.1, math.sin(a) * 1.8), Color3.fromRGB(255, 250, 240), Enum.PartType.Ball)
+		end
+	else
+		local green = Color3.fromRGB(50, 120, 80)
+		p(Vector3.new(1, 3, 1), CFrame.new(0, 1.5, 0), Color3.fromRGB(110, 76, 46))
+		for i, w in { 6, 4.6, 3.2 } do
+			p(Vector3.new(w, 2.6, w), CFrame.new(0, 2 + i * 2, 0) * CFrame.Angles(0, i * 0.5, 0), green, nil, Enum.Material.Grass)
+		end
+		p(Vector3.new(1.4, 1.4, 1.4), CFrame.new(0, 9.4, 0), Color3.fromRGB(255, 255, 255), Enum.PartType.Ball, Enum.Material.Snow)
+	end
+	return m
+end
+
+local function themeDecor(decor: Instance, def, info, rng: Random)
+	local inner = def.Tiles * Config.Tiles.Size / 2 + 4
+	local outer = info.Size / 2 - 7
+	local placed, attempts = 0, 0
+	while placed < 26 and attempts < 400 do
+		attempts += 1
+		local x = rng:NextNumber(-outer, outer)
+		local z = rng:NextNumber(-outer, outer)
+		local d = math.max(math.abs(x), math.abs(z))
+		local pos = def.Center + Vector3.new(x, 0, z)
+		-- the flower bed and the ramp entrance stay clear
+		local entry = (Vector3.new(pos.X, 0, pos.Z) - Vector3.new(info.Edge.X, 0, info.Edge.Z)).Magnitude
+		if d > inner and entry > 18 then
+			themeProp(decor, info.Theme, CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0), rng:NextNumber(0.9, 1.4), rng)
+			placed += 1
+		end
+	end
+end
+
 local function buildDecor(decor: Instance)
 	local rng = Random.new(42)
-	local area = { -390, 390, -210, 560 }
-	scatter(decor, "Tree", 56, 0.8, 1.4, rng, area)
-	scatter(decor, "Pine", 50, 0.9, 1.7, rng, area)
-	scatter(decor, "Bush", 95, 0.7, 1.4, rng, area)
-	scatter(decor, "Rock_A", 40, 0.8, 2.2, rng, area)
-	scatter(decor, "Rock_B", 40, 0.8, 1.8, rng, area)
-	scatter(decor, "Mushroom", 48, 0.8, 1.6, rng, area)
+	local area = { -500, 500, -230, 760 }
+	scatter(decor, "Tree", 80, 0.8, 1.4, rng, area)
+	scatter(decor, "Pine", 70, 0.9, 1.7, rng, area)
+	scatter(decor, "Bush", 130, 0.7, 1.4, rng, area)
+	scatter(decor, "Rock_A", 55, 0.8, 2.2, rng, area)
+	scatter(decor, "Rock_B", 55, 0.8, 1.8, rng, area)
+	scatter(decor, "Mushroom", 60, 0.8, 1.6, rng, area)
+	-- themed props on the outer plateaus (between the flowers and the cliff rim)
+	for fieldId, info in PLATEAUS do
+		if info.Theme then
+			themeDecor(decor, Config.FieldById[fieldId], info, rng)
+		end
+	end
 	-- big boulders at cliff feet
 	for fieldId, info in PLATEAUS do
 		local def = Config.FieldById[fieldId]
