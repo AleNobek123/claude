@@ -220,6 +220,10 @@ local function checkAdAvailability()
 	if RunService:IsStudio() then
 		return
 	end
+	if Config.AdReward.ProductId == 0 then
+		adAvailable = false -- not set up yet: no video card in live servers
+		return
+	end
 	local format
 	for _, item in Enum.AdFormat:GetEnumItems() do
 		if item.Name:find("Rewarded") then
