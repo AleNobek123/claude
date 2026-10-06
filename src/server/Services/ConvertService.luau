@@ -38,7 +38,13 @@ end
 local function honeyMult(player: Player): number
 	local hive = S.BeeService:GetHiveMods(player)
 	local data = S.DataService:Get(player)
-	return (1 + (hive and hive.HoneyMult or 0)) * Config.HoneyMultiplier(data and data.HoneyTier)
+	local premium = player.MembershipType == Enum.MembershipType.Premium and (1 + Config.Premium.HoneyBonus) or 1
+	return (1 + (hive and hive.HoneyMult or 0)) * Config.HoneyMultiplier(data and data.HoneyTier) * premium
+end
+
+-- honey a player would get for converting `pollen` right now (all multipliers applied)
+function ConvertService:HoneyValue(player: Player, pollen: number): number
+	return pollen * Config.Convert.HoneyPerPollen * honeyMult(player)
 end
 
 function ConvertService:IsConverting(player: Player): boolean

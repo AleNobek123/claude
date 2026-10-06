@@ -7,7 +7,10 @@
 	Amounts shown are already scaled to the player's progression (server-side Config.ScaleReward).
 ]]
 
+local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
@@ -24,6 +27,8 @@ local state = nil
 local fetchedAt = 0
 local content: Frame
 local sections = {}
+local adAvailable = RunService:IsStudio() -- ads never run in Studio; the server grants directly there
+local adBusy = false
 
 function Rewards:Init(controllers)
 	C = controllers
@@ -210,6 +215,85 @@ function Rewards:_renderSocial(parent: Instance)
 	end
 end
 
+-- Roblox only serves rewarded videos to eligible players (13+, supported region/device)
+local function checkAdAvailability()
+	if RunService:IsStudio() then
+		return
+	end
+	local format
+	for _, item in Enum.AdFormat:GetEnumItems() do
+		if item.Name:find("Rewarded") then
+			format = item
+			break
+		end
+	end
+	if not format then
+		adAvailable = false
+		return
+	end
+	local ok, result = pcall(function()
+		return game:GetService("AdService"):GetAdAvailabilityNowAsync(format)
+	end)
+	adAvailable = ok and result ~= nil and result.AdAvailabilityResult == Enum.AdAvailabilityResult.IsAvailable
+end
+
+local function bonusCard(parent: Instance, order: number, color: Color3, glow: boolean, icon: string, title: string, sub: string)
+	local frame = tile(parent, order, Vector2.new(0, 56), color, glow)
+	frame.Size = UDim2.new(1, -8, 0, 56)
+	UI.Icon(icon, { Position = UDim2.fromOffset(10, 6), Size = UDim2.fromOffset(44, 44), Parent = frame })
+	UI.Label({ Text = title, Position = UDim2.fromOffset(62, 5), Size = UDim2.new(1, -240, 0, 24), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 19, Parent = frame })
+	local subLabel = UI.Label({ Text = sub, Font = UI.Body, TextColor3 = UI.Colors.Muted, Position = UDim2.fromOffset(62, 30), Size = UDim2.new(1, -240, 0, 18), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 14, Parent = frame })
+	return frame, subLabel
+end
+
+function Rewards:_renderBonus(parent: Instance)
+	local ad = state.Ad
+	local premium = state.Premium
+	local showAd = ad ~= nil and adAvailable
+	local box = UI.Create("Frame", { LayoutOrder = 8, Size = UDim2.new(1, 0, 0, (showAd and 64 or 0) + 64), BackgroundTransparency = 1, Parent = parent }, { UI.List(8) })
+	sections.Ad = nil
+
+	if showAd then
+		local ready = ad.Left > 0
+		local frame = bonusCard(box, 1, Color3.fromRGB(255, 205, 120), ready and not adBusy, "Honey", "Watch a video",
+			`+{Format.Short(ad.Amount)} honey  •  {ad.Left}/{ad.Max} left`)
+		if ready then
+			local button
+			button = UI.Button({ Text = adBusy and "LOADING..." or "WATCH", BackgroundColor3 = UI.Colors.Good, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(150, 38), MaxTextSize = 16, Parent = frame }, function()
+				if adBusy then
+					return
+				end
+				adBusy = true
+				button.Text = "LOADING..."
+				claim("Ad", nil, frame) -- yields until the video has finished
+				adBusy = false
+				self:_render()
+				-- the honey arrives through a purchase receipt a moment later: refresh the counter then
+				task.delay(3, function()
+					if UI.Current == "Rewards" then
+						self:_fetch()
+						self:_render()
+					end
+				end)
+			end)
+		else
+			local timer = UI.Label({ Font = UI.Body, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -12, 0.5, 0), Size = UDim2.fromOffset(150, 22), MaxTextSize = 15, TextColor3 = UI.Colors.Muted, Parent = frame })
+			sections.Ad = { Label = timer, At = os.clock() + ad.NextIn }
+		end
+	end
+
+	local bonus = math.floor((premium and premium.Bonus or Config.Premium.HoneyBonus) * 100 + 0.5)
+	local frame = bonusCard(box, 2, Color3.fromRGB(255, 225, 150), false, "Star", "Roblox Premium", `+{bonus}% honey on everything you make`)
+	if premium and premium.Active then
+		UI.Label({ Text = "ACTIVE", AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -50, 0.5, 0), Size = UDim2.fromOffset(100, 26), MaxTextSize = 18, TextColor3 = UI.Colors.Good, Parent = frame })
+		UI.Icon("Check", { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), Size = UDim2.fromOffset(30, 30), Parent = frame })
+	else
+		UI.Button({ Text = "GET PREMIUM", BackgroundColor3 = UI.Colors.Honey, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(150, 38), MaxTextSize = 16, Parent = frame }, function()
+			pcall(MarketplaceService.PromptPremiumPurchase, MarketplaceService, Players.LocalPlayer)
+		end)
+	end
+end
+
 function Rewards:_render()
 	if not content or not state then
 		return
@@ -226,6 +310,8 @@ function Rewards:_render()
 	self:_renderPlaytime(list)
 	sectionTitle(list, 5, "Star", "Support the game")
 	self:_renderSocial(list)
+	sectionTitle(list, 7, "Sparkles", "Bonus honey")
+	self:_renderBonus(list)
 end
 
 function Rewards:Start()
@@ -246,11 +332,27 @@ function Rewards:Start()
 	panel.OnOpen = function()
 		self:_fetch()
 		self:_render()
+		task.spawn(function()
+			local before = adAvailable
+			checkAdAvailability()
+			if adAvailable ~= before and UI.Current == "Rewards" then
+				self:_render()
+			end
+		end)
 	end
 	-- live countdowns while the panel is open
 	task.spawn(function()
 		while true do
 			task.wait(1)
+			if UI.Current == "Rewards" and sections.Ad then
+				local left = sections.Ad.At - os.clock()
+				if left <= 0 then
+					self:_fetch()
+					self:_render()
+				else
+					sections.Ad.Label.Text = "Next in " .. Format.Time(left)
+				end
+			end
 			if UI.Current == "Rewards" and sections.Timers then
 				local seconds = playSeconds()
 				for _, t in sections.Timers do

@@ -5,8 +5,10 @@
 	by hand from the Rewards panel. Honey/treat amounts scale with lifetime honey.
 ]]
 
+local AdService = game:GetService("AdService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
@@ -94,6 +96,75 @@ local function dailyIndex(data): (number, boolean)
 	return (streak - 1) % #Config.Rewards.Daily + 1, true
 end
 
+-- Rewarded videos ---------------------------------------------------------------------------------
+
+local adPlaying: { [Player]: boolean } = {}
+
+function RewardService:AdState(player: Player, data)
+	local cfg = Config.AdReward
+	local now = os.time()
+	local recent = {}
+	for _, t in data.AdViews or {} do
+		if now - t < cfg.Window then
+			table.insert(recent, t)
+		end
+	end
+	table.sort(recent)
+	data.AdViews = recent
+	local left = math.max(0, cfg.MaxPerWindow - #recent)
+	local backpack = Config.BackpackById[data.Backpack] or Config.Backpacks[1]
+	return {
+		Left = left,
+		Max = cfg.MaxPerWindow,
+		NextIn = left == 0 and recent[1] and (recent[1] + cfg.Window - now) or 0,
+		Amount = math.floor(S.ConvertService:HoneyValue(player, backpack.Capacity * cfg.BackpackShare)),
+	}
+end
+
+-- called by MonetizationService when the ad reward product is granted (inside GrantPurchase)
+function RewardService:GrantAd(player: Player, data)
+	local ad = self:AdState(player, data)
+	table.insert(data.AdViews, os.time())
+	S.DataService:MarkDirty(player, "AdViews")
+	S.DataService:AddHoney(player, ad.Amount)
+	Notify.Player(player, `+{Format.Short(ad.Amount)} honey for watching a video!`, "good")
+end
+
+function RewardService:WatchAd(player: Player)
+	local data = S.DataService:Get(player)
+	if not data then
+		return false, "Please wait a moment."
+	end
+	local ad = self:AdState(player, data)
+	if ad.Left <= 0 then
+		return false, `No more videos for now. Next one in {Format.Time(ad.NextIn)}.`
+	end
+	if adPlaying[player] then
+		return false, "A video is already playing."
+	end
+	local productId = Config.AdReward.ProductId
+	if productId == 0 then
+		if RunService:IsStudio() then
+			S.DataService:GrantPurchase(player, "studio-ad-" .. os.clock(), function(profile)
+				self:GrantAd(player, profile)
+			end)
+			return true, "(Studio) video reward granted"
+		end
+		return false, "Video rewards are not set up yet."
+	end
+	adPlaying[player] = true
+	local ok = pcall(function()
+		local reward = AdService:CreateAdRewardFromDevProductId(productId)
+		return AdService:ShowRewardedVideoAdAsync(player, reward)
+	end)
+	adPlaying[player] = nil
+	if not ok then
+		return false, "No video available right now. Try again later!"
+	end
+	-- the honey itself arrives through ProcessReceipt once the whole video was watched
+	return true, "Thanks for watching!"
+end
+
 function RewardService:State(player: Player)
 	local data = S.DataService:Get(player)
 	if not data then
@@ -115,6 +186,8 @@ function RewardService:State(player: Player)
 		Daily = { Index = index, Claimable = claimable, Streak = data.Daily.Streak, NextIn = (today() + 1) * 86400 - os.time() },
 		Playtime = { Seconds = data.Playtime.Seconds, Claimed = data.Playtime.Claimed },
 		Social = social,
+		Ad = self:AdState(player, data),
+		Premium = { Active = player.MembershipType == Enum.MembershipType.Premium, Bonus = Config.Premium.HoneyBonus },
 	}
 end
 
@@ -250,6 +323,10 @@ function RewardService:_tutorialStep(player: Player, step: number)
 	end
 end
 
+Players.PlayerRemoving:Connect(function(player)
+	adPlaying[player] = nil
+end)
+
 function RewardService:Init(services)
 	S = services
 	self.RedeemCode = Net.Function("RedeemCode")
@@ -278,6 +355,8 @@ function RewardService:Start()
 			ok, message = self:ClaimPlaytime(player, arg)
 		elseif action == "Social" then
 			ok, message = self:Social(player, arg)
+		elseif action == "Ad" then
+			ok, message = self:WatchAd(player)
 		else
 			return false, "Unknown action"
 		end

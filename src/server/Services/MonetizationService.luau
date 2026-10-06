@@ -72,6 +72,11 @@ function ProductGrants.RoyalEgg(player, data)
 	Notify.Player(player, "You got a Royal Egg! Hatch it from the Hive menu.", "rare")
 end
 
+-- Rewarded video: the ad's reward product arrives here like any purchase
+function ProductGrants.AdReward(player, data)
+	S.RewardService:GrantAd(player, data)
+end
+
 function ProductGrants.MutationSerum(player, data)
 	data.Serums += 1
 	S.DataService:MarkDirty(player, "Serums")
@@ -207,6 +212,9 @@ function MonetizationService:Init(services)
 			passById[def.Id] = name
 		end
 	end
+	if Config.AdReward.ProductId ~= 0 then
+		productById[Config.AdReward.ProductId] = "AdReward"
+	end
 	for index, step in Config.HoneyLadder.Steps do
 		if step.Id ~= 0 then
 			productById[step.Id] = "HoneyLadder"
@@ -224,6 +232,11 @@ function MonetizationService:Start()
 	local function onPlayer(player: Player)
 		task.spawn(self._checkPasses, self, player)
 		task.spawn(self._checkPolicy, self, player)
+		task.delay(8, function()
+			if player.Parent and player.MembershipType == Enum.MembershipType.Premium then
+				Notify.Player(player, `Roblox Premium bonus: +{math.floor(Config.Premium.HoneyBonus * 100)}% honey!`, "rare")
+			end
+		end)
 	end
 	S.DataService:OnLoaded(function(player, data)
 		player:SetAttribute("HoneyTier", data.HoneyTier or 0)

@@ -479,6 +479,14 @@ function Config.HoneyLadderStep(tier: number?)
 	return Config.HoneyLadder.Steps[(tier or 0) + 1]
 end
 
+-- Roblox Premium members make more honey (on top of everything else)
+Config.Premium = { HoneyBonus = 0.25 }
+
+-- Rewarded video ads (AdService): watching a whole video gives honey worth half a backpack of
+-- pollen, at most MaxPerWindow videos per Window seconds. ProductId is the developer product
+-- used as the ad reward (create one on the Creator Dashboard; 0 = not set up, Studio grants it).
+Config.AdReward = { ProductId = 0, BackpackShare = 0.5, MaxPerWindow = 5, Window = 1800 }
+
 -- In Studio, products with Id = 0 are granted instantly so every flow can be tested.
 Config.StudioFreePurchases = true
 

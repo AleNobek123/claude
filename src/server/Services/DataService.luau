@@ -66,6 +66,7 @@ DataService.Template = {
 	Playtime = { Day = 0, Seconds = 0, Claimed = {} }, -- today's play time and claimed milestones
 	Social = {}, -- [providerId] = true once claimed
 	CodexSeen = {}, -- bees whose Codex entry the player has opened
+	AdViews = {}, -- os.time() of rewarded videos watched in the last Config.AdReward.Window
 }
 
 type Profile = {
