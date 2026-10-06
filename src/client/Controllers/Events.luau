@@ -342,6 +342,8 @@ function Events:Start()
 		self:_animate()
 		local camera = Workspace.CurrentCamera
 		ui.Banner.Responsive.Scale = math.clamp(math.min(camera.ViewportSize.Y / 760, camera.ViewportSize.X / 1200), 0.55, 1)
+		-- panels own the screen: the banner steps aside while one is open
+		ui.Banner.Visible = UI.Current == nil and UI:_screen().Enabled
 		ui.Shadow.Visible = ui.Banner.Visible
 	end)
 	task.spawn(function()

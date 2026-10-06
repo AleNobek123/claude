@@ -102,7 +102,18 @@ local function card(order: number, title: string, tier: number?)
 	end
 	local preview = UI.Create("Frame", { Name = "Preview", Position = UDim2.fromOffset(0, 8), Size = UDim2.new(1, 0, 0, 104), BackgroundTransparency = 1, Parent = frame })
 	UI.Icon("Glow", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.55), Size = UDim2.fromOffset(120, 120), ImageColor3 = color, ImageTransparency = 0.35, Parent = preview })
-	UI.Label({ Text = title, Position = UDim2.fromOffset(10, 112), Size = UDim2.new(1, -20, 0, 24), MaxTextSize = 20, TextWrapped = false, Parent = frame })
+	UI.Create("TextLabel", {
+		Name = "Title",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(10, 112),
+		Size = UDim2.new(1, -20, 0, 24),
+		Font = UI.Font,
+		TextSize = 20,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		TextColor3 = UI.Colors.Text,
+		Text = title,
+		Parent = frame,
+	})
 	Juice.Pop(frame, order * 0.02)
 	return frame, preview
 end
@@ -227,7 +238,7 @@ function Shop:Start()
 	-- tabs live on their own strip under the header, so nothing overlaps the title
 	local tabs = UI.Create("Frame", { Name = "Tabs", Size = UDim2.new(1, 0, 0, 50), BackgroundTransparency = 1, Parent = content }, { UI.List(10, true, Enum.HorizontalAlignment.Center) })
 	for i, info in TABS do
-		tabButtons[info.Id] = UI.Button({ Text = info.Label, Icon = info.Icon, BackgroundColor3 = info.Color, LayoutOrder = i, Size = UDim2.fromOffset(136, 40), MaxTextSize = 18, Parent = tabs }, function()
+		tabButtons[info.Id] = UI.Button({ Name = info.Id, Text = info.Label, Icon = info.Icon, BackgroundColor3 = info.Color, LayoutOrder = i, Size = UDim2.fromOffset(136, 40), MaxTextSize = 18, Parent = tabs }, function()
 			if tab ~= info.Id then
 				tab = info.Id
 				C.Sound:Play("Swish", { Volume = 0.6 })
