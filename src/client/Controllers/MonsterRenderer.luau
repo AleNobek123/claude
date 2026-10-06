@@ -35,8 +35,23 @@ end
 local function build(monsterType: string)
 	local assets = ReplicatedStorage:FindFirstChild("Assets")
 	local folderAssets = assets and assets:FindFirstChild("Monsters")
-	local template = folderAssets and folderAssets:FindFirstChild(monsterType)
+	local def = Config.Monsters[monsterType]
+	-- new monsters can reuse another monster's mesh with a tint and scale
+	local template = folderAssets and folderAssets:FindFirstChild(def.Model or monsterType)
 	local model = template and template:Clone() or fallback(monsterType)
+	if template and def.Tint then
+		for _, part in model:GetDescendants() do
+			if part:IsA("BasePart") then
+				local h, sat, v = part.Color:ToHSV()
+				if sat > 0.25 and v > 0.2 then -- keep eyes, outlines and white details
+					part.Color = def.Tint:Lerp(part.Color, 0.15)
+				end
+			end
+		end
+	end
+	if template and def.Scale then
+		model:ScaleTo(model:GetScale() * def.Scale)
+	end
 	local root = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart")
 	model.PrimaryPart = root
 	local offsets = {}
@@ -50,7 +65,6 @@ local function build(monsterType: string)
 		end
 	end
 	-- health bar (mesh templates are "Grounded": their root sits on the ground)
-	local def = Config.Monsters[monsterType]
 	local grounded = model:GetAttribute("Grounded") == true
 	local height = grounded and model:GetExtentsSize().Y or def.Size * 0.7
 	local gui = Instance.new("BillboardGui")
@@ -166,6 +180,64 @@ function MonsterRenderer:_onUpdate(payload)
 	end
 end
 
+-- Boss bar: big outlined bar at the bottom of the screen while a boss is near you
+function MonsterRenderer:_bossBar()
+	local UI = C.UI
+	local holder = UI.Create("Frame", {
+		Name = "BossBar",
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -170),
+		Size = UDim2.fromOffset(520, 56),
+		BackgroundTransparency = 1,
+		Visible = false,
+		Parent = UI:_screen(),
+	})
+	local name = UI.Create("TextLabel", {
+		Size = UDim2.new(1, 0, 0, 28),
+		BackgroundTransparency = 1,
+		Font = UI.Font,
+		TextSize = 26,
+		TextColor3 = Color3.fromRGB(255, 230, 230),
+		Text = "",
+		Parent = holder,
+	}, { UI.Create("UIStroke", { Color = Color3.fromRGB(90, 0, 10), Thickness = 3 }) })
+	local back = UI.Create("Frame", {
+		Position = UDim2.fromOffset(0, 30),
+		Size = UDim2.new(1, 0, 0, 22),
+		BackgroundColor3 = Color3.fromRGB(40, 10, 14),
+		BackgroundTransparency = 0.2,
+		Parent = holder,
+	}, { UI.Round(), UI.Create("UIStroke", { Color = Color3.fromRGB(255, 80, 80), Thickness = 2 }) })
+	local fill = UI.Create("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = back }, { UI.Round(), UI.Gradient(Color3.fromRGB(255, 110, 90), Color3.fromRGB(200, 20, 40)) })
+	local text = UI.Create("TextLabel", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Font = UI.Font, TextSize = 16, TextColor3 = Color3.new(1, 1, 1), Text = "", ZIndex = 3, Parent = back }, { UI.Create("UIStroke", { Color = Color3.fromRGB(60, 0, 0), Thickness = 2 }) })
+	self.BossUI = { Holder = holder, Name = name, Fill = fill, Text = text }
+end
+
+function MonsterRenderer:_updateBossBar()
+	local ui = self.BossUI
+	if not ui then
+		return
+	end
+	local camera = Workspace.CurrentCamera
+	local best, bestDistance = nil, 160
+	for _, m in monsters do
+		local def = Config.Monsters[m.Type]
+		if def and def.Boss and camera then
+			local d = (m.Position - camera.CFrame.Position).Magnitude
+			if d < bestDistance then
+				best, bestDistance = m, d
+			end
+		end
+	end
+	ui.Holder.Visible = best ~= nil and C.UI:_screen().Enabled
+	if best then
+		ui.Name.Text = Config.Monsters[best.Type].Name:upper()
+		local ratio = math.clamp(best.Health / best.MaxHealth, 0, 1)
+		ui.Fill.Size = UDim2.fromScale(math.max(ratio, 0.01), 1)
+		ui.Text.Text = `{math.ceil(best.Health)} / {best.MaxHealth}`
+	end
+end
+
 function MonsterRenderer:Init(controllers)
 	C = controllers
 	folder = Instance.new("Folder")
@@ -186,10 +258,12 @@ function MonsterRenderer:Start()
 		end
 	end
 
+	self:_bossBar()
 	local parts, cframes = {}, {}
 	RunService.RenderStepped:Connect(function()
 		local now = Workspace:GetServerTimeNow()
 		local t = os.clock()
+		self:_updateBossBar()
 		table.clear(parts)
 		table.clear(cframes)
 		for id, m in monsters do

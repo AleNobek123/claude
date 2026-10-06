@@ -15,11 +15,11 @@
 local BeeData = {}
 
 BeeData.Order = {
-	"Basic", "Busy", "Bumble",
-	"Honey", "Fire", "Frost", "Guard",
-	"Bomber", "Soldier", "Ember", "Crystal", "Night",
-	"Phoenix", "QueensGuard", "Golden",
-	"Solar", "Void",
+	"Basic", "Busy", "Bumble", "Rascal", "Cool", "Sunny",
+	"Honey", "Fire", "Frost", "Guard", "Bubble", "Leaf", "Spark",
+	"Bomber", "Soldier", "Ember", "Crystal", "Night", "Ninja", "Toxic", "Candy",
+	"Phoenix", "QueensGuard", "Golden", "Thunder", "Lion",
+	"Solar", "Void", "Galaxy", "Diamond",
 }
 
 BeeData.Bees = {
@@ -41,6 +41,25 @@ BeeData.Bees = {
 		Gather = 18, GatherTime = 5.5, Speed = 11, Convert = 120, Attack = 1,
 		Description = "Slow and fluffy, carries big loads.",
 		Visual = { Body = Color3.fromRGB(110, 140, 230), Stripe = Color3.fromRGB(30, 30, 50) },
+	},
+
+	Rascal = {
+		Name = "Rascal Bee", Rarity = "Common", Color = "Red", Tags = { "Worker" },
+		Gather = 9, GatherTime = 3.6, Speed = 16, Convert = 70, Attack = 3,
+		Description = "A cheeky fighter that loves red flowers.",
+		Visual = { Body = Color3.fromRGB(235, 90, 70), Stripe = Color3.fromRGB(50, 25, 20) },
+	},
+	Cool = {
+		Name = "Cool Bee", Rarity = "Common", Color = "Blue", Tags = { "Worker" },
+		Gather = 11, GatherTime = 4.0, Speed = 15, Convert = 90, Attack = 1,
+		Description = "Calm, steady and great with blue flowers.",
+		Visual = { Body = Color3.fromRGB(120, 200, 255), Stripe = Color3.fromRGB(30, 50, 80) },
+	},
+	Sunny = {
+		Name = "Sunny Bee", Rarity = "Common", Color = "White", Tags = { "Worker" },
+		Gather = 12, GatherTime = 4.2, Speed = 14, Convert = 95, Attack = 1,
+		Description = "Always smiling, always gathering.",
+		Visual = { Body = Color3.fromRGB(255, 235, 120), Stripe = Color3.fromRGB(200, 120, 30) },
 	},
 
 	-- Rare -------------------------------------------------------------------
@@ -70,6 +89,28 @@ BeeData.Bees = {
 		Gather = 10, GatherTime = 4.0, Speed = 16, Convert = 80, Attack = 5,
 		Description = "Hunts monsters that come near you.",
 		Visual = { Body = Color3.fromRGB(200, 70, 70), Stripe = Color3.fromRGB(50, 50, 55) },
+	},
+
+	Bubble = {
+		Name = "Bubble Bee", Rarity = "Rare", Color = "Blue", Tags = { "Water" },
+		Gather = 14, GatherTime = 3.8, Speed = 15, Convert = 110, Attack = 2,
+		Description = "Pops pollen bubbles over blue flowers.",
+		Ability = { Id = "BubblePop", Name = "Bubble Pop", Type = "Burst", Cooldown = 13, Radius = 6, Power = 1.4, Fx = "Water" },
+		Visual = { Body = Color3.fromRGB(90, 170, 255), Stripe = Color3.fromRGB(230, 245, 255) },
+	},
+	Leaf = {
+		Name = "Leaf Bee", Rarity = "Rare", Color = "White", Tags = { "Nature" },
+		Gather = 15, GatherTime = 3.8, Speed = 15, Convert = 110, Attack = 1,
+		Description = "Leaf Gust sweeps a patch of white flowers.",
+		Ability = { Id = "LeafGust", Name = "Leaf Gust", Type = "Burst", Cooldown = 14, Radius = 7, Power = 1.3, Fx = "Nature" },
+		Visual = { Body = Color3.fromRGB(120, 210, 90), Stripe = Color3.fromRGB(40, 90, 30) },
+	},
+	Spark = {
+		Name = "Spark Bee", Rarity = "Rare", Color = "White", Tags = { "Electric" },
+		Gather = 12, GatherTime = 3.6, Speed = 18, Convert = 100, Attack = 4,
+		Description = "Static Shock zaps the nearest monster.",
+		Ability = { Id = "StaticShock", Name = "Static Shock", Type = "Strike", Cooldown = 9, Damage = 6, Range = 35, Fx = "Electric" },
+		Visual = { Body = Color3.fromRGB(255, 240, 90), Stripe = Color3.fromRGB(70, 90, 200) },
 	},
 
 	-- Epic -----------------------------------------------------------------------
@@ -109,6 +150,29 @@ BeeData.Bees = {
 		Visual = { Body = Color3.fromRGB(60, 50, 110), Stripe = Color3.fromRGB(200, 190, 255) },
 	},
 
+	Ninja = {
+		Name = "Ninja Bee", Rarity = "Epic", Color = "Blue", Tags = { "Soldier", "Shadow" },
+		Gather = 16, GatherTime = 3.2, Speed = 22, Convert = 120, Attack = 12,
+		Description = "Shuriken strikes from the shadows.",
+		Ability = { Id = "Shuriken", Name = "Shuriken", Type = "Strike", Cooldown = 7, Damage = 10, Range = 45, Fx = "Shadow" },
+		Visual = { Body = Color3.fromRGB(45, 45, 60), Stripe = Color3.fromRGB(200, 40, 60) },
+	},
+	Toxic = {
+		Name = "Toxic Bee", Rarity = "Epic", Color = "Red", Tags = { "Toxic" },
+		Gather = 19, GatherTime = 3.5, Speed = 16, Convert = 140, Attack = 5,
+		Description = "Toxic Cloud harvests and slows monsters.",
+		Ability = { Id = "ToxicCloud", Name = "Toxic Cloud", Type = "Burst", Cooldown = 14, Radius = 9, Power = 2, Fx = "Toxic", Slow = 0.5, SlowTime = 4 },
+		Visual = { Body = Color3.fromRGB(150, 230, 60), Stripe = Color3.fromRGB(90, 30, 110) },
+	},
+	Candy = {
+		Name = "Candy Bee", Rarity = "Epic", Color = "Red", Tags = { "Honey" },
+		Gather = 15, GatherTime = 3.5, Speed = 16, Convert = 260, Attack = 2,
+		Description = "Sugar Rush converts a bit of your bag; +15% hive convert speed.",
+		Ability = { Id = "SugarRush", Name = "Sugar Rush", Type = "InstantConvert", Cooldown = 30, Fraction = 0.02, Fx = "Candy" },
+		Passive = { HiveConvert = 0.15 },
+		Visual = { Body = Color3.fromRGB(255, 140, 200), Stripe = Color3.fromRGB(255, 250, 250) },
+	},
+
 	-- Legendary ----------------------------------------------------------------------
 	Phoenix = {
 		Name = "Phoenix Bee", Rarity = "Legendary", Color = "Red", Tags = { "Fire", "Royal" },
@@ -135,6 +199,22 @@ BeeData.Bees = {
 		Visual = { Body = Color3.fromRGB(255, 215, 60), Stripe = Color3.fromRGB(255, 250, 200), Accessory = "Crown" },
 	},
 
+	Thunder = {
+		Name = "Thunder Bee", Rarity = "Legendary", Color = "Blue", Tags = { "Electric", "Royal" },
+		Gather = 30, GatherTime = 3.0, Speed = 22, Convert = 300, Attack = 10,
+		Description = "Thunderstorm strikes four patches of flowers at once.",
+		Ability = { Id = "Thunderstorm", Name = "Thunderstorm", Type = "MultiBurst", Count = 4, Cooldown = 16, Radius = 6, Power = 2.5, Fx = "Electric" },
+		Visual = { Body = Color3.fromRGB(70, 110, 255), Stripe = Color3.fromRGB(255, 245, 120), Accessory = "Crown" },
+	},
+	Lion = {
+		Name = "Lion Bee", Rarity = "Legendary", Color = "White", Tags = { "Soldier", "Royal" },
+		Gather = 26, GatherTime = 3.0, Speed = 20, Convert = 260, Attack = 35,
+		Description = "Roar hits every monster nearby; monsters drop +50% honey.",
+		Ability = { Id = "Roar", Name = "Roar", Type = "Strike", Cooldown = 10, Damage = 15, Range = 40, Fx = "Strike" },
+		Passive = { MonsterHoney = 0.5 },
+		Visual = { Body = Color3.fromRGB(240, 170, 60), Stripe = Color3.fromRGB(150, 80, 20), Accessory = "Crown" },
+	},
+
 	-- Mythic --------------------------------------------------------------------------
 	Solar = {
 		Name = "Solar Bee", Rarity = "Mythic", Color = "White", Tags = { "Light", "Royal" },
@@ -150,6 +230,22 @@ BeeData.Bees = {
 		Description = "Black Hole pulls in pollen and crushes monsters.",
 		Ability = { Id = "BlackHole", Name = "Black Hole", Type = "Burst", Cooldown = 18, Radius = 18, Power = 4, Fx = "Void", StrikeMult = 10 },
 		Visual = { Body = Color3.fromRGB(40, 20, 70), Stripe = Color3.fromRGB(170, 80, 255), Accessory = "Halo" },
+	},
+	Galaxy = {
+		Name = "Galaxy Bee", Rarity = "Mythic", Color = "Blue", Tags = { "Light", "Shadow", "Royal" },
+		Gather = 52, GatherTime = 2.4, Speed = 25, Convert = 650, Attack = 20,
+		Description = "Star Bloom harvests a huge area; +8% all pollen.",
+		Ability = { Id = "StarBloom", Name = "Star Bloom", Type = "Burst", Cooldown = 17, Radius = 16, Power = 5, Fx = "Void" },
+		Passive = { PollenMult = 0.08 },
+		Visual = { Body = Color3.fromRGB(60, 40, 140), Stripe = Color3.fromRGB(120, 230, 255), Accessory = "Halo" },
+	},
+	Diamond = {
+		Name = "Diamond Bee", Rarity = "Mythic", Color = "White", Tags = { "Honey", "Royal" },
+		Gather = 45, GatherTime = 2.6, Speed = 23, Convert = 900, Attack = 10,
+		Description = "Diamond Touch converts 8% of your bag; +20% honey.",
+		Ability = { Id = "DiamondTouch", Name = "Diamond Touch", Type = "InstantConvert", Cooldown = 28, Fraction = 0.08, Fx = "Gold" },
+		Passive = { HoneyMult = 0.2 },
+		Visual = { Body = Color3.fromRGB(220, 245, 255), Stripe = Color3.fromRGB(120, 200, 255), Accessory = "Halo" },
 	},
 }
 

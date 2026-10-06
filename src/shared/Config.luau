@@ -241,6 +241,19 @@ Config.Monsters = {
 	Aphid = { Name = "Aphid", Health = 20, Speed = 6, Drain = 5, DrainRange = 8, Honey = 60, Size = 2.2 },
 	Ladybug = { Name = "Ladybug", Health = 80, Speed = 8, Drain = 12, DrainRange = 9, Honey = 300, Size = 3.2 },
 	AphidQueen = { Name = "Aphid Queen", Health = 2500, Speed = 4, Drain = 40, DrainRange = 14, Honey = 12000, Size = 7, Boss = true },
+	Mantis = { Name = "Mantis", Health = 220, Speed = 10, Drain = 20, DrainRange = 10, Honey = 900, Size = 3.6, Model = "Aphid", Tint = Color3.fromRGB(110, 220, 90), Scale = 1.7 },
+	-- world bosses (see Config.Bosses): huge health pools fought by everyone in the field
+	KingBeetle = { Name = "King Beetle", Health = 12000, Speed = 5, Drain = 60, DrainRange = 16, Honey = 60000, Size = 9, Boss = true, Model = "Ladybug", Tint = Color3.fromRGB(70, 50, 140), Scale = 3, EggReward = "Silver" },
+	StumpSnail = { Name = "Stump Snail", Health = 30000, Speed = 2, Drain = 80, DrainRange = 18, Honey = 150000, Size = 10, Boss = true, Model = "AphidQueen", Tint = Color3.fromRGB(150, 110, 70), Scale = 1.5, EggReward = "Royal" },
+}
+
+-- Epic boss encounters: one world boss at a time, announced to everyone
+Config.Bosses = {
+	Interval = 600, -- seconds between bosses
+	StudioInterval = 150,
+	Lifetime = 300, -- escapes if not defeated in time
+	Types = { "KingBeetle", "StumpSnail" },
+	Fields = { "Clover", "Rose", "Bluebell", "Crystal" },
 }
 
 Config.MonsterSpawns = {
@@ -250,8 +263,8 @@ Config.MonsterSpawns = {
 		Sunflower = { "Aphid" },
 		Clover = { "Aphid", "Ladybug" },
 		Rose = { "Ladybug" },
-		Bluebell = { "Ladybug", "Aphid" },
-		Crystal = { "Ladybug" },
+		Bluebell = { "Ladybug", "Aphid", "Mantis" },
+		Crystal = { "Ladybug", "Mantis" },
 	},
 }
 

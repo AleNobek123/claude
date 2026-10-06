@@ -9,6 +9,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -162,7 +163,16 @@ function MonsterService:_kill(m, killer: Player?)
 				data.Stats.MonstersDefeated += 1
 			end
 			Notify.FxTo(player, "Honey", { Position = pos + Vector3.new(0, 3, 0), Amount = honey })
+			-- world bosses also drop an egg for everyone who fought
+			if m.Def.EggReward and data then
+				data.Eggs[m.Def.EggReward] = (data.Eggs[m.Def.EggReward] or 0) + 1
+				S.DataService:MarkDirty(player, "Eggs")
+				Notify.Player(player, `{m.Def.Name} defeated! +1 {Config.Eggs[m.Def.EggReward].Name}`, "rare")
+			end
 		end
+	end
+	if m.Def.Boss and m.WorldBoss then
+		Notify.All(`{m.Def.Name} was defeated!`, "event")
 	end
 	self:_remove(m, true)
 	killedEvent:Fire(m, killer)
@@ -279,7 +289,7 @@ function MonsterService:_tick()
 		end
 		if #list > 0 then
 			m.LastSeenPlayers = clock
-		elseif not m.Event and clock - m.LastSeenPlayers > IDLE_DESPAWN then
+		elseif not m.Event and not m.WorldBoss and clock - m.LastSeenPlayers > IDLE_DESPAWN then
 			self:_remove(m, false)
 			continue
 		end
@@ -318,6 +328,35 @@ function MonsterService:_spawnTick()
 				self:Spawn(types[rng:NextInteger(1, #types)], fieldId)
 			end
 		end
+	end
+end
+
+-- World bosses: one at a time, in a random high field, announced to the whole server
+local nextBoss = os.clock() + 60
+function MonsterService:_bossTick()
+	local clock = os.clock()
+	for _, m in monsters do
+		if m.WorldBoss then
+			if clock > m.EscapeAt then
+				self:_remove(m, false)
+				Notify.All(`The {m.Def.Name} escaped...`, "info")
+			end
+			return
+		end
+	end
+	if clock < nextBoss then
+		return
+	end
+	local interval = RunService:IsStudio() and Config.Bosses.StudioInterval or Config.Bosses.Interval
+	nextBoss = clock + interval
+	local bossType = Config.Bosses.Types[rng:NextInteger(1, #Config.Bosses.Types)]
+	local fieldId = Config.Bosses.Fields[rng:NextInteger(1, #Config.Bosses.Fields)]
+	local field = S.FieldService:GetField(fieldId)
+	local m = field and self:Spawn(bossType, fieldId, field.Center)
+	if m then
+		m.WorldBoss = true
+		m.EscapeAt = clock + Config.Bosses.Lifetime
+		Notify.All(`BOSS: a {m.Def.Name} appeared in {field.Def.Name}!`, "event")
 	end
 end
 
@@ -364,6 +403,10 @@ function MonsterService:Start()
 		while true do
 			task.wait(2)
 			pcall(self._spawnTick, self)
+			local ok, err = pcall(self._bossTick, self)
+			if not ok then
+				warn("[MonsterService] boss:", err)
+			end
 		end
 	end)
 end

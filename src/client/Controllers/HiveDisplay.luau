@@ -158,6 +158,8 @@ function HiveDisplay:_step()
 	local camPos = camera.CFrame.Position
 	local t = os.clock()
 	local parts, cframes = {}, {}
+	local swarms = C.BeeRenderer and C.BeeRenderer:Swarms() or {}
+	local dayNight = C.DayNightBeeController
 	for hiveIndex, hive in docks do
 		local pad = padOf(hiveIndex)
 		if not pad or (pad.Position - camPos).Magnitude > ANIMATE_DISTANCE then
@@ -167,7 +169,22 @@ function HiveDisplay:_step()
 		local root = owner and owner.Character and owner.Character:FindFirstChild("HumanoidRootPart")
 		local awake = root ~= nil and (root.Position - pad.Position).Magnitude < AWAKE_DISTANCE
 		local showZ = not awake and (pad.Position - camPos).Magnitude < Z_DISTANCE
+		local swarm = swarms[hiveIndex]
 		for slot, dock in hive.Bees do
+			-- the real bee is asleep in this cell tonight: hide the docked copy
+			local real = swarm and swarm.Bees[slot]
+			if dayNight and dayNight:IsSleeping(real) then
+				if dock.Model.Parent then
+					dock.Model.Parent = nil
+				end
+				if dock.Zzz then
+					dock.Zzz:Destroy()
+					dock.Zzz = nil
+				end
+				continue
+			elseif not dock.Model.Parent then
+				dock.Model.Parent = folder
+			end
 			local cf
 			local flap = 0
 			if awake then

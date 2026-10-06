@@ -16,6 +16,7 @@ local ORDER = {
 	"Fx",
 	"BeeRenderer",
 	"HiveDisplay",
+	"DayNightBeeController",
 	"Shop",
 	"Hive",
 	"Eggs",

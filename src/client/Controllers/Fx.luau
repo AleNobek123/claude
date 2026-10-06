@@ -34,6 +34,11 @@ local COLORS = {
 	Solar = Color3.fromRGB(255, 240, 140),
 	Void = Color3.fromRGB(140, 60, 255),
 	Supernova = Color3.fromRGB(255, 80, 20),
+	Water = Color3.fromRGB(90, 180, 255),
+	Nature = Color3.fromRGB(110, 220, 90),
+	Electric = Color3.fromRGB(255, 245, 110),
+	Toxic = Color3.fromRGB(160, 240, 60),
+	Candy = Color3.fromRGB(255, 140, 210),
 }
 
 local function anchorPart(position: Vector3): Part

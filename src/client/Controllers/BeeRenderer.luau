@@ -276,16 +276,28 @@ function BeeRenderer:_evaluate(bee, root: BasePart?, now: number, t: number, dt:
 	end
 
 	local goal = task.Target
+	local monsterPos
 	if kind == TASK.ToOwner and root then
 		goal = root.Position + Vector3.new(0, 2.2, 0)
 	elseif kind == TASK.Attack then
-		local monsterPos = C.MonsterRenderer and C.MonsterRenderer:GetPosition(task.TargetId)
-		goal = monsterPos and (monsterPos + Vector3.new(0, 1.5, 0)) or goal
+		monsterPos = C.MonsterRenderer and C.MonsterRenderer:GetPosition(task.TargetId)
+		-- melee (dash into the monster) unless the server parked the bee at a stand-off point
+		task.Ranged = task.Ranged or (monsterPos ~= nil and (task.Target - monsterPos).Magnitude > 4)
+		if monsterPos and not task.Ranged then
+			goal = monsterPos + Vector3.new(0, 1.5, 0)
+		end
 	end
 
 	local alpha = task.Duration > 0 and math.clamp((now - task.Start) / task.Duration, 0, 1) or 1
+	if kind == TASK.Attack and task.Ranged and monsterPos and not task.Fired and now >= task.Start + task.Duration - 0.55 then
+		task.Fired = true
+		self:_stinger(bee.Position, monsterPos + Vector3.new(0, 1, 0), bee)
+	end
 	if alpha >= 1 then
 		if kind == TASK.Attack then
+			if task.Ranged then
+				return damp(bee.Position, goal + Vector3.new(0, math.sin(t * 6 + bee.Phase) * 0.3, 0), dt, 8)
+			end
 			return goal + Vector3.new(0, math.sin(t * 22) * 0.5, 0)
 		end
 		return damp(bee.Position, goal, dt, 10)
@@ -295,6 +307,51 @@ function BeeRenderer:_evaluate(bee, root: BasePart?, now: number, t: number, dt:
 	local arc = math.sin(alpha * math.pi) * math.min(3.5, (goal - bee.StartPos).Magnitude * 0.12)
 	local wobble = Vector3.new(math.sin(t * 6 + bee.Phase) * 0.15, math.sin(t * 7.3 + bee.Phase) * 0.15, 0)
 	return base + Vector3.new(0, arc, 0) + wobble
+end
+
+-- Ranged attack: a glowing stinger flies from the bee to the monster, with a small hit flash
+function BeeRenderer:_stinger(from: Vector3, to: Vector3, bee)
+	local camera = Workspace.CurrentCamera
+	if not camera or (from - camera.CFrame.Position).Magnitude > LOD_DISTANCE then
+		return
+	end
+	local def = BeeData.Bees[bee.Id]
+	local color = def and def.Visual.Stripe:Lerp(Color3.fromRGB(255, 230, 120), 0.5) or Color3.fromRGB(255, 220, 90)
+	local dart = Instance.new("Part")
+	dart.Name = "Stinger"
+	dart.Size = Vector3.new(0.18, 0.18, 1.1)
+	dart.Material = Enum.Material.Neon
+	dart.Color = color
+	dart.Anchored = true
+	dart.CanCollide = false
+	dart.CanQuery = false
+	dart.CanTouch = false
+	dart.CastShadow = false
+	dart.CFrame = CFrame.lookAt(from, to)
+	local a0 = Instance.new("Attachment")
+	a0.Position = Vector3.new(0, 0, 0.5)
+	a0.Parent = dart
+	local a1 = Instance.new("Attachment")
+	a1.Position = Vector3.new(0, 0, -0.5)
+	a1.Parent = dart
+	local trail = Instance.new("Trail")
+	trail.Attachment0 = a0
+	trail.Attachment1 = a1
+	trail.Color = ColorSequence.new(color)
+	trail.Lifetime = 0.15
+	trail.LightEmission = 1
+	trail.Transparency = NumberSequence.new(0.2, 1)
+	trail.Parent = dart
+	dart.Parent = folder
+	local travel = math.clamp((to - from).Magnitude / 60, 0.08, 0.35)
+	local tween = game:GetService("TweenService"):Create(dart, TweenInfo.new(travel, Enum.EasingStyle.Linear), { CFrame = CFrame.lookAt(to, to + (to - from).Unit) })
+	tween:Play()
+	tween.Completed:Once(function()
+		dart:Destroy()
+		if C.Fx then
+			C.Fx:Burst(to - Vector3.new(0, 1, 0), color, 6)
+		end
+	end)
 end
 
 function BeeRenderer:_step(dt: number)

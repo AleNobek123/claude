@@ -49,6 +49,15 @@
    "path": [
     "ReplicatedStorage",
     "Shared",
+    "DayNight"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/DayNight.luau"
+  },
+  {
+   "path": [
+    "ReplicatedStorage",
+    "Shared",
     "EconomicScaling"
    ],
    "class": "ModuleScript",
@@ -290,6 +299,17 @@
    ],
    "class": "ModuleScript",
    "file": "src/client/Controllers/Collector.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "DayNightBeeController"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/DayNightBeeController.luau"
   },
   {
    "path": [

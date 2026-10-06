@@ -20,6 +20,7 @@ local Config = require(Shared.Config)
 local BeeData = require(Shared.BeeData)
 local BeeClass = require(Shared.BeeClass)
 local BeeCodec = require(Shared.BeeCodec)
+local DayNight = require(Shared.DayNight)
 local Synergy = require(Shared.Synergy)
 local Net = require(Shared.Net)
 local Notify = require(script.Parent.Parent.Util.Notify)
@@ -30,6 +31,9 @@ BeeService.Name = "BeeService"
 local TICK = 0.1
 local GATHER_RADIUS = 20
 local HUNT_RANGE = 30
+local ASSIST_RANGE = 18 -- non-soldier bees join a fight this close to their owner
+local ASSIST_CHANCE = 0.6
+local STANDOFF = 7 -- ranged bees hover this far from the target and shoot stingers
 local SUPERNOVA_EVERY = 20
 local TASK = BeeCodec.Task
 
@@ -260,6 +264,27 @@ function BeeService:_advance(swarm, bee, ctx, now: number)
 		position = root.Position
 	end
 
+	-- 0. night: half of the swarm flies home and sleeps in its hive cell
+	if DayNight.Sleeps(bee.Slot, now) then
+		local cell = S.HiveService:CellPosition(player, bee.Slot)
+		if cell then
+			if phase == "Rest" then
+				state.EndsAt = now + 3 -- already asleep: stay silent on the network
+			elseif phase == "FlyTo" and state.Sleeping then
+				queue(swarm, bee, "Rest", cell, 3, now)
+			else
+				state.Sleeping = true
+				state.Tile = nil
+				queue(swarm, bee, "FlyTo", cell, travelTime(bee, position, cell), now)
+			end
+			return
+		end
+	end
+	if state.Sleeping then
+		state.Sleeping = nil
+		phase = "Wake"
+	end
+
 	-- 2. converting: shuttle between owner and hive cell
 	if ctx.Converting then
 		if phase == "ToHive" then
@@ -274,15 +299,24 @@ function BeeService:_advance(swarm, bee, ctx, now: number)
 		return
 	end
 
-	-- 3. in a field: hunt monsters (soldiers) or gather
+	-- 3. in a field: the swarm fights monsters, otherwise gathers.
+	-- Soldiers always hunt and dash into the target; other bees join fights near their owner
+	-- and keep a stand-off distance, shooting stingers (the client draws the projectile).
 	if ctx.Field then
-		if bee:HasTag("Soldier") then
-			local monster = S.MonsterService:FindNearest(ctx.Field.Id, root.Position, HUNT_RANGE)
-			if monster then
-				local at = S.MonsterService:Position(monster) + Vector3.new(0, 1.5, 0)
-				queue(swarm, bee, "Attack", at, travelTime(bee, position, at) + 0.35, now, monster.Id)
-				return
+		local soldier = bee:HasTag("Soldier")
+		local range = soldier and HUNT_RANGE or ASSIST_RANGE
+		local monster = S.MonsterService:FindNearest(ctx.Field.Id, root.Position, range)
+		if monster and (soldier or math.random() < ASSIST_CHANCE) then
+			local target = S.MonsterService:Position(monster) + Vector3.new(0, 1.5, 0)
+			if soldier then
+				queue(swarm, bee, "Attack", target, travelTime(bee, position, target) + 0.35, now, monster.Id)
+			else
+				local away = (position - target) * Vector3.new(1, 0, 1)
+				away = away.Magnitude > 0.1 and away.Unit or Vector3.new(1, 0, 0)
+				local hover = target + away * STANDOFF + Vector3.new(0, 2.5, 0)
+				queue(swarm, bee, "Attack", hover, travelTime(bee, position, hover) + 0.6, now, monster.Id)
 			end
+			return
 		end
 		if not ctx.Full then
 			if phase == "FlyTo" and state.FieldId == ctx.Field.Id and state.Tile then
@@ -355,7 +389,7 @@ function BeeService:_tickSwarm(swarm, now: number, clock: number)
 		if now >= bee.State.EndsAt then
 			self:_advance(swarm, bee, ctx, now)
 		end
-		if field and root and not ctx.Converting and bee:IsAbilityReady(clock) then
+		if field and root and not ctx.Converting and not bee.State.Sleeping and bee:IsAbilityReady(clock) then
 			abilityCtx = abilityCtx or makeContext(player, field, root)
 			local result = bee:CastAbility(abilityCtx, clock)
 			if result then
