@@ -817,12 +817,32 @@ local function buildHive(index: number, hivesFolder)
 
 	local sign = part({ Name = "Sign", Size = Vector3.new(1, 1, 1), CFrame = CFrame.new(x, centerY + (hiveMesh and 24 or 19), z), Transparency = 1, CanCollide = false, Parent = model })
 	local billboard = Instance.new("BillboardGui")
-	billboard.Size = UDim2.new(16, 0, 4, 0)
+	billboard.Size = UDim2.new(14, 0, 8, 0)
+	billboard.StudsOffset = Vector3.new(0, 1.5, 0)
 	billboard.MaxDistance = 160
 	billboard.LightInfluence = 0
 	billboard.Parent = sign
-	label(billboard, "Owner", "Free Hive", { Size = UDim2.fromScale(1, 0.55), TextColor3 = Color3.fromRGB(255, 230, 150) })
-	label(billboard, "Score", "Walk up to claim", { Size = UDim2.fromScale(1, 0.4), Position = UDim2.fromScale(0, 0.58) })
+	-- owner's avatar in a golden ring (HiveService fills it in; a honeycomb while the hive is free)
+	local avatar = Instance.new("ImageLabel")
+	avatar.Name = "Avatar"
+	avatar.AnchorPoint = Vector2.new(0.5, 0)
+	avatar.Position = UDim2.fromScale(0.5, 0)
+	avatar.Size = UDim2.fromScale(1, 0.56)
+	avatar.BackgroundColor3 = Color3.fromRGB(255, 214, 110)
+	avatar.Image = Assets.Icons and Assets.Icons.Honeycomb or ""
+	avatar.Parent = billboard
+	local aspect = Instance.new("UIAspectRatioConstraint")
+	aspect.AspectRatio = 1
+	aspect.Parent = avatar
+	local round = Instance.new("UICorner")
+	round.CornerRadius = UDim.new(0.5, 0)
+	round.Parent = avatar
+	local ring = Instance.new("UIStroke")
+	ring.Color = Color3.fromRGB(255, 190, 40)
+	ring.Thickness = 4
+	ring.Parent = avatar
+	label(billboard, "Owner", "Free Hive", { Size = UDim2.fromScale(1, 0.24), Position = UDim2.fromScale(0, 0.59), TextColor3 = Color3.fromRGB(255, 230, 150) })
+	label(billboard, "Score", "Walk up to claim", { Size = UDim2.fromScale(1, 0.16), Position = UDim2.fromScale(0, 0.83) })
 end
 
 -- Golden Nests ----------------------------------------------------------------------------------------------

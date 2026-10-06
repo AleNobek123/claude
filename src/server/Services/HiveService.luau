@@ -17,11 +17,13 @@ local Config = require(Shared.Config)
 local BeeData = require(Shared.BeeData)
 local Format = require(Shared.Format)
 local Net = require(Shared.Net)
+local Assets = require(Shared.Assets)
 local Notify = require(script.Parent.Parent.Util.Notify)
 
 local HiveService = {}
 HiveService.Name = "HiveService"
 
+local FREE_HIVE_ICON = Assets.Icons and Assets.Icons.Honeycomb or ""
 local LOCKED_COLOR = Color3.fromRGB(122, 84, 48)
 local EMPTY_COLOR = Color3.fromRGB(255, 205, 90)
 
@@ -164,11 +166,17 @@ function HiveService:RefreshSign(player: Player?, index: number, score: number?)
 	end
 	local owner = gui:FindFirstChild("Owner", true)
 	local scoreLabel = gui:FindFirstChild("Score", true)
+	local avatar = gui:FindFirstChild("Avatar", true)
 	if owner then
-		owner.Text = player and (player.DisplayName .. "'s Hive") or "Free Hive"
+		owner.Text = player and player.DisplayName or "Free Hive"
 	end
 	if scoreLabel then
-		scoreLabel.Text = player and ("Swarm Score: " .. Format.Short(score or 0)) or "Walk up to claim"
+		scoreLabel.Text = player and (`@{player.Name}  •  Swarm {Format.Short(score or 0)}`) or "Walk up to claim"
+	end
+	if avatar then
+		-- rbxthumb needs no web request: the engine streams the headshot itself
+		avatar.Image = player and `rbxthumb://type=AvatarHeadShot&id={player.UserId}&w=150&h=150` or FREE_HIVE_ICON
+		avatar.BackgroundColor3 = player and Color3.fromRGB(255, 236, 190) or Color3.fromRGB(255, 214, 110)
 	end
 end
 
