@@ -738,16 +738,21 @@ local function buildHive(index: number, hivesFolder)
 		for _, c in cells:GetChildren() do
 			cellTop = math.max(cellTop, frameCF:PointToObjectSpace(c.Position).Y + c.Size.Y / 2)
 		end
+		-- full-size drips, lifted so they hang from under the roof down to just above the cells
 		local honey = body:FindFirstChild("Honey")
 		if honey then
 			local rel = frameCF:ToObjectSpace(honey.CFrame)
-			honey.Size = Vector3.new(honey.Size.X, honey.Size.Y * 0.45, honey.Size.Z)
 			honey.CFrame = frameCF * CFrame.new(rel.X, cellTop + 0.1 + honey.Size.Y / 2, rel.Z) * rel.Rotation
 		end
+		-- close the small gap between the post tops and the roof eaves without poking through
 		local posts = body:FindFirstChild("Posts")
-		if posts then
-			posts.Size += Vector3.new(0, 2, 0)
-			posts.CFrame = posts.CFrame * CFrame.new(0, 1, 0)
+		local roof = body:FindFirstChild("Roof")
+		if posts and roof then
+			local postTop = frameCF:PointToObjectSpace(posts.Position).Y + posts.Size.Y / 2
+			local roofBottom = frameCF:PointToObjectSpace(roof.Position).Y - roof.Size.Y / 2
+			local grow = math.clamp(roofBottom - postTop + 0.25, 0, 1.5)
+			posts.Size += Vector3.new(0, grow, 0)
+			posts.CFrame = posts.CFrame * CFrame.new(0, grow / 2, 0)
 		end
 	end
 
