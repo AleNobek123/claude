@@ -137,9 +137,16 @@ end
 
 function Promo:_paint(entry)
 	local current = tier()
-	local nextMult = Config.HoneyMultiplier(current + 1)
-	entry.Title.Text = `x{nextMult} HONEY`
-	entry.Price.Text = `R$ {Config.HoneyLadderStep(current).Robux}`
+	local step = Config.HoneyLadderStep(current)
+	if not step then
+		-- ladder finished: show the reward instead of a price
+		entry.Title.Text = `x{Config.HoneyMultiplier(current)} HONEY`
+		entry.Price.Text = "MAX"
+		entry.Owned.Text = "fully upgraded!"
+		return
+	end
+	entry.Title.Text = `x{Config.HoneyMultiplier(current + 1)} HONEY`
+	entry.Price.Text = `R$ {step.Robux}`
 	entry.Owned.Text = current > 0 and `you have x{Config.HoneyMultiplier(current)}` or ""
 end
 

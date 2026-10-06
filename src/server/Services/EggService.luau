@@ -152,9 +152,22 @@ function EggService:_hatchInto(player: Player, data, eggId: string, slot: number
 end
 
 -- Hatch an owned egg into a chosen hive cell (hive menu)
+-- one hatch at a time: the client plays a cutscene per hatch, so hatches must not stack up
+local hatchLock: { [Player]: number } = {}
+local HATCH_GAP = 3.5
+local function hatchBusy(player: Player): boolean
+	return (hatchLock[player] or 0) > os.clock()
+end
+game:GetService("Players").PlayerRemoving:Connect(function(player)
+	hatchLock[player] = nil
+end)
+
 function EggService:_hatch(player: Player, eggId: string, slot: number)
 	local data = S.DataService:Get(player)
 	if not data or typeof(eggId) ~= "string" or typeof(slot) ~= "number" then
+		return
+	end
+	if hatchBusy(player) then
 		return
 	end
 	slot = math.floor(slot)
@@ -172,6 +185,7 @@ function EggService:_hatch(player: Player, eggId: string, slot: number)
 		return
 	end
 	data.Eggs[eggId] -= 1
+	hatchLock[player] = os.clock() + HATCH_GAP
 	self:_hatchInto(player, data, eggId, slot, nil)
 end
 
@@ -180,6 +194,9 @@ function EggService:_nestHatch(player: Player, nestIndex: number)
 	local data = S.DataService:Get(player)
 	local nest = typeof(nestIndex) == "number" and Config.Nests[nestIndex]
 	if not data or not nest then
+		return
+	end
+	if hatchBusy(player) then
 		return
 	end
 	local character = player.Character
@@ -203,6 +220,7 @@ function EggService:_nestHatch(player: Player, nestIndex: number)
 			return
 		end
 	end
+	hatchLock[player] = os.clock() + HATCH_GAP
 	self:_hatchInto(player, data, eggId, slot, nestIndex)
 end
 

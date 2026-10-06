@@ -37,6 +37,14 @@ local hatchEgg: string? = nil
 local RADIUS = Config.Hive.Radius
 local COUNT = HexGrid.Get(RADIUS).count
 
+local function hatchBusy(): boolean
+	if C.HatchCutscene and C.HatchCutscene:IsBusy() then
+		C.NotificationCenter:Push("Wait for the hatch to finish!", "info")
+		return true
+	end
+	return false
+end
+
 function Hive:Init(controllers)
 	C = controllers
 	UI = C.UI
@@ -391,7 +399,9 @@ function Hive:_renderDetail(data)
 			if count > 0 then
 				any = true
 				action(list, "Egg", `{Config.Eggs[eggId].Name}  x{count}`, Config.Eggs[eggId].Color:Lerp(UI.Colors.Honey, 0.4), function()
-					Net.Event("HatchEgg"):FireServer(eggId, selected)
+					if not hatchBusy() then
+						Net.Event("HatchEgg"):FireServer(eggId, selected)
+					end
 				end)
 			end
 		end
@@ -425,7 +435,9 @@ function Hive:_click(slot: number)
 	local unlocked = unlockedSlots(data)
 	if hatchEgg then
 		if slot <= unlocked and not data.Bees[tostring(slot)] then
-			Net.Event("HatchEgg"):FireServer(hatchEgg, slot)
+			if not hatchBusy() then
+				Net.Event("HatchEgg"):FireServer(hatchEgg, slot)
+			end
 			hatchEgg = nil
 			UI:Close()
 		else

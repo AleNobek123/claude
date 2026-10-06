@@ -189,6 +189,11 @@ local function letterbox(on: boolean, screen: ScreenGui)
 	tween(bottomBar, 0.4, { Position = on and UDim2.fromScale(0, 0.88) or UDim2.fromScale(0, 1) })
 end
 
+-- true while a hatch is on screen or queued (egg buttons wait for it, so cutscenes never stack)
+function HatchCutscene:IsBusy(): boolean
+	return playing or #queue > 0
+end
+
 function HatchCutscene:Play(result)
 	if playing then
 		table.insert(queue, result)

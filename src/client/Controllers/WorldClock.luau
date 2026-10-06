@@ -92,7 +92,8 @@ function WorldClock:_update()
 	local bossField = Workspace:GetAttribute("BossField")
 	local nextBoss = Workspace:GetAttribute("NextBossAt")
 	if bossField then
-		pills.Boss.Text.Text = `Boss in {bossField}!`
+		local escape = Workspace:GetAttribute("BossEscapeAt")
+		pills.Boss.Text.Text = escape and `Boss in {bossField} · escapes in {Format.Time(escape - now)}` or `Boss in {bossField}!`
 		pills.Boss.Frame.BackgroundColor3 = Color3.fromRGB(120, 20, 20)
 	else
 		pills.Boss.Text.Text = nextBoss and `Boss in {Format.Time(nextBoss - now)}` or "Boss soon"

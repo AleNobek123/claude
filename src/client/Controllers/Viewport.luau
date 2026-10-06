@@ -123,11 +123,9 @@ local function onScreen(vp: ViewportFrame): boolean
 	return false
 end
 
--- Re-rendering a viewport is expensive, so at most BUDGET of them move per frame (round
--- robin). Poses come from the clock, so motion keeps the same speed however many are open.
-local BUDGET = 14
+-- Every on-screen viewport moves every frame (smooth); hidden / scrolled-away ones cost nothing.
+-- Poses come from the clock, so motion keeps the same speed whatever the frame rate.
 local visible = {}
-local cursor = 0
 local lastScan = 0
 
 local function pose(entry, t: number)
@@ -154,13 +152,7 @@ RunService.RenderStepped:Connect(function()
 			end
 		end
 	end
-	local count = #visible
-	if count == 0 then
-		return
-	end
-	for _ = 1, math.min(BUDGET, count) do
-		cursor = cursor % count + 1
-		local entry = visible[cursor]
+	for _, entry in visible do
 		if entry.Model.Parent then
 			pose(entry, t)
 		end

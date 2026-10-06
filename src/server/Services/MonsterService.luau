@@ -334,9 +334,11 @@ end
 -- World bosses: one at a time, in a random high field, announced to the whole server
 local nextBoss = os.clock() + 60
 -- clients read these for the world clock HUD (server time, so every client agrees)
-local function publishBoss(field: string?)
-	Workspace:SetAttribute("NextBossAt", Workspace:GetServerTimeNow() + math.max(0, nextBoss - os.clock()))
+local function publishBoss(field: string?, escapeAt: number?)
+	local now = Workspace:GetServerTimeNow()
+	Workspace:SetAttribute("NextBossAt", now + math.max(0, nextBoss - os.clock()))
 	Workspace:SetAttribute("BossField", field)
+	Workspace:SetAttribute("BossEscapeAt", escapeAt and now + math.max(0, escapeAt - os.clock()) or nil)
 end
 
 function MonsterService:_bossTick()
@@ -349,7 +351,7 @@ function MonsterService:_bossTick()
 				publishBoss(nil)
 			else
 				local field = S.FieldService:GetField(m.FieldId)
-				publishBoss(field and field.Def.Name or m.FieldId)
+				publishBoss(field and field.Def.Name or m.FieldId, m.EscapeAt)
 			end
 			return
 		end

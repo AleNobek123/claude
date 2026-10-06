@@ -649,28 +649,6 @@ local function buildGate(def, gatesFolder)
 		crimsonX(gui, UDim2.fromScale(0.42, 0.42), UDim2.fromScale(0.5, 0.38))
 		label(gui, "Requirement", def.VIP and "VIP ONLY" or `{def.BeesRequired} BEES`, { Size = UDim2.fromScale(0.9, 0.2), Position = UDim2.fromScale(0.05, 0.66), TextColor3 = Color3.new(1, 1, 1), TextStrokeColor3 = Color3.fromRGB(120, 0, 10), TextStrokeTransparency = 0 })
 	end
-	-- floating badge visible from afar: red pill, crimson X, requirement
-	local badge = Instance.new("BillboardGui")
-	badge.Name = "Badge"
-	badge.Size = UDim2.new(10, 0, 3.4, 0)
-	badge.StudsOffset = Vector3.new(0, 5, 0)
-	badge.MaxDistance = 180
-	badge.LightInfluence = 0
-	badge.Parent = top
-	local back = Instance.new("Frame")
-	back.Size = UDim2.fromScale(1, 1)
-	back.BackgroundColor3 = Color3.fromRGB(230, 40, 50)
-	back.BackgroundTransparency = 0.25
-	back.Parent = badge
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(1, 0)
-	corner.Parent = back
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(255, 200, 200)
-	stroke.Thickness = 2
-	stroke.Parent = back
-	crimsonX(back, UDim2.fromScale(0.26, 0.7), UDim2.fromScale(0.18, 0.5))
-	label(back, "Requirement", def.VIP and "VIP" or `{def.BeesRequired} BEES`, { Size = UDim2.fromScale(0.6, 0.8), Position = UDim2.fromScale(0.34, 0.1) })
 end
 
 -- Hives -----------------------------------------------------------------------------------------------------
@@ -749,6 +727,27 @@ local function buildHive(index: number, hivesFolder)
 			cell.Parent = cells
 		else
 			part({ Name = "Cell_" .. slot, Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.8, diameter, diameter), CFrame = CFrame.new(pos) * CFrame.Angles(0, math.pi / 2, 0), Color = Color3.fromRGB(122, 84, 48), Attributes = { Slot = slot }, Parent = cells })
+		end
+	end
+
+	-- the honey drips on top used to hang over the top row of cells (and the bees docked there),
+	-- and the posts stopped short of the roof: keep the honey above the cells, posts into the roof
+	local body = model:FindFirstChild("Body")
+	if frameCF and body then
+		local cellTop = -math.huge
+		for _, c in cells:GetChildren() do
+			cellTop = math.max(cellTop, frameCF:PointToObjectSpace(c.Position).Y + c.Size.Y / 2)
+		end
+		local honey = body:FindFirstChild("Honey")
+		if honey then
+			local rel = frameCF:ToObjectSpace(honey.CFrame)
+			honey.Size = Vector3.new(honey.Size.X, honey.Size.Y * 0.45, honey.Size.Z)
+			honey.CFrame = frameCF * CFrame.new(rel.X, cellTop + 0.1 + honey.Size.Y / 2, rel.Z) * rel.Rotation
+		end
+		local posts = body:FindFirstChild("Posts")
+		if posts then
+			posts.Size += Vector3.new(0, 2, 0)
+			posts.CFrame = posts.CFrame * CFrame.new(0, 1, 0)
 		end
 	end
 

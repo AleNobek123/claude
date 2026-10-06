@@ -453,7 +453,8 @@ Config.GamepassOrder = { "ExtraSlots", "VIPField", "AutoConvert" }
 Config.HoneyLadder = {
 	Name = "Honey Forever",
 	Base = 2, -- multiplier = Base ^ tier
-	-- price triples every step (x2 = 3, x4 = 9, x8 = 27 ...) up to 1999, then stays at 1999
+	-- price triples every step (x2 = 3, x4 = 9, x8 = 27 ...) up to 1999; the ladder ends at x1024
+	-- (tier 10). The 1999 steps may share one developer product.
 	Steps = {
 		{ Id = 0, Robux = 3 },
 		{ Id = 0, Robux = 9 },
@@ -462,17 +463,20 @@ Config.HoneyLadder = {
 		{ Id = 0, Robux = 243 },
 		{ Id = 0, Robux = 729 },
 		{ Id = 0, Robux = 1999 },
+		{ Id = 0, Robux = 1999 },
+		{ Id = 0, Robux = 1999 },
+		{ Id = 0, Robux = 1999 },
 	},
 }
+Config.HoneyLadder.MaxTier = #Config.HoneyLadder.Steps
 
 function Config.HoneyMultiplier(tier: number?): number
-	return Config.HoneyLadder.Base ^ (tier or 0)
+	return Config.HoneyLadder.Base ^ math.min(tier or 0, Config.HoneyLadder.MaxTier)
 end
 
--- The product that buys the next tier for a player currently at `tier`
+-- The product that buys the next tier for a player currently at `tier` (nil once maxed)
 function Config.HoneyLadderStep(tier: number?)
-	local steps = Config.HoneyLadder.Steps
-	return steps[math.min((tier or 0) + 1, #steps)]
+	return Config.HoneyLadder.Steps[(tier or 0) + 1]
 end
 
 -- In Studio, products with Id = 0 are granted instantly so every flow can be tested.

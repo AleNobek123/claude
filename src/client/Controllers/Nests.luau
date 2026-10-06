@@ -119,7 +119,9 @@ function Nests:Start()
 			return
 		end
 		local index = prompt:GetAttribute("NestIndex")
-		if index then
+		if index and C.HatchCutscene and C.HatchCutscene:IsBusy() then
+			C.NotificationCenter:Push("Wait for the hatch to finish!", "info")
+		elseif index then
 			Net.Event("NestHatch"):FireServer(index)
 		end
 	end)

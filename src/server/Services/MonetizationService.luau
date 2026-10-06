@@ -80,7 +80,7 @@ end
 
 -- Honey Forever ladder: every purchase adds one tier (x2 honey each), forever
 function ProductGrants.HoneyLadder(player, data)
-	data.HoneyTier = (data.HoneyTier or 0) + 1
+	data.HoneyTier = math.min((data.HoneyTier or 0) + 1, Config.HoneyLadder.MaxTier)
 	S.DataService:MarkDirty(player, "HoneyTier")
 	player:SetAttribute("HoneyTier", data.HoneyTier)
 	Notify.Player(player, `Honey Forever upgraded: x{Config.HoneyMultiplier(data.HoneyTier)} honey!`, "rare")
@@ -158,7 +158,9 @@ function MonetizationService:_request(player: Player, kind: string, name: string
 			return
 		end
 		local step = Config.HoneyLadderStep(data.HoneyTier)
-		if step.Id ~= 0 then
+		if not step then
+			Notify.Player(player, `Honey Forever is maxed at x{Config.HoneyMultiplier(data.HoneyTier)}!`, "info")
+		elseif step.Id ~= 0 then
 			MarketplaceService:PromptProductPurchase(player, step.Id)
 		elseif studioGrants() then
 			S.DataService:GrantPurchase(player, "studio-" .. HttpService:GenerateGUID(false), function(profile)

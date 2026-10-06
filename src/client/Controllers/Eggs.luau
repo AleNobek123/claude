@@ -138,6 +138,10 @@ function Eggs:_renderLeft(data)
 	local product = egg.Product and Config.Products[egg.Product]
 	if product and not player:GetAttribute("PaidRandomRestricted") then
 		UI.Button({ LayoutOrder = 7, Text = `{product.Robux} R$`, Icon = "Gift", BackgroundColor3 = Color3.fromRGB(60, 200, 110), Size = UDim2.new(1, 0, 0, 40), Parent = left }, function()
+			if C.HatchCutscene and C.HatchCutscene:IsBusy() then
+				C.NotificationCenter:Push("Wait for the hatch to finish!", "info")
+				return
+			end
 			Net.Event("RequestPurchase"):FireServer("Product", egg.Product)
 		end)
 	end
