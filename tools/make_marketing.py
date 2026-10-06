@@ -558,6 +558,54 @@ def icon_auto_convert():
     return finish(img, (512, 512), "pass_auto_convert.png")
 
 
+def pencil_layer(length):
+    """chunky cartoon pencil lying along +X (eraser on the left, tip on the right)"""
+    S = int(length * 1.2)
+    img = canvas(S, S)
+    d = ImageDraw.Draw(img)
+    cy = S / 2
+    w = length * 0.16
+    x0 = (S - length) / 2
+    ow = max(5, int(length * 0.025))
+    er = x0 + length * 0.14
+    band = er + length * 0.07
+    body_end = x0 + length * 0.78
+    d.rounded_rectangle([x0, cy - w / 2, er + 10, cy + w / 2], radius=w * 0.35, fill=(255, 140, 170), outline=INK, width=ow)
+    d.rectangle([er, cy - w / 2, band, cy + w / 2], fill=(200, 205, 215), outline=INK, width=ow)
+    d.rectangle([band, cy - w / 2, body_end, cy + w / 2], fill=(255, 200, 40), outline=INK, width=ow)
+    d.line([(band, cy), (body_end, cy)], fill=(235, 160, 20), width=int(w * 0.28))
+    tip = x0 + length
+    d.polygon([(body_end, cy - w / 2), (tip, cy), (body_end, cy + w / 2)], fill=(240, 200, 150), outline=INK)
+    d.line([(body_end, cy - w / 2), (tip, cy), (body_end, cy + w / 2)], fill=INK, width=ow)
+    gx = body_end + (tip - body_end) * 0.62
+    d.polygon([(gx, cy - w * 0.19), (tip, cy), (gx, cy + w * 0.19)], fill=(60, 60, 70))
+    hl(img, "rectangle", [band + 10, cy - w * 0.38, body_end - 10, cy - w * 0.22], (255, 255, 255, 110))
+    return img
+
+
+def icon_group():
+    """studio emblem: honey badge, mascot bee with a pencil (no text, works with any group name)"""
+    S = 1024
+    img = radial(S, S, (255, 225, 110), (235, 120, 20))
+    sunburst(img, S / 2, S / 2, 20, (255, 255, 255), alpha=40)
+    badge = canvas(S, S)
+    d = ImageDraw.Draw(badge)
+    d.polygon(hexagon(512, 512, 430, 30), fill=INK)
+    d.polygon(hexagon(512, 512, 400, 30), fill=(255, 196, 46))
+    d.polygon(hexagon(512, 512, 330, 30), fill=(255, 226, 120))
+    inner = canvas(S, S)
+    honeycomb(inner, 60, (255, 210, 80), (235, 170, 40), 5, alpha=255)
+    mask = Image.new("L", (S, S), 0)
+    ImageDraw.Draw(mask).polygon(hexagon(512, 512, 330, 30), fill=255)
+    badge.paste(inner, (0, 0), mask)
+    d.polygon(hexagon(512, 512, 330, 30), outline=INK, width=14)
+    img.alpha_composite(shadow(badge, offset=(0, 16), blur=20))
+    place(img, pencil_layer(620), 520, 650, rot=28)
+    place(img, bee_layer(400), 512, 470, rot=-6)
+    sparkles(img, 12, (80, 80, 944, 944), seed=17)
+    return finish(img, (512, 512), "group_icon.png")
+
+
 # ------------------------------------------------------------------------------------------------
 # Thumbnails 1920x1080 (drawn at 2x)
 
@@ -744,7 +792,7 @@ def thumb_rewards():
 
 if __name__ == "__main__":
     made = [
-        icon_game(),
+        icon_game(), icon_group(),
         icon_instant(), icon_booster(), icon_pack_s(), icon_pack_l(), icon_royal_egg(), icon_serum(),
         icon_extra_slots(), icon_vip(), icon_auto_convert(),
     ]

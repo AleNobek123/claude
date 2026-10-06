@@ -431,19 +431,19 @@ Config.Feedback = {
 -- Monetization (set real IDs after creating products on the Creator Dashboard) -------------
 
 Config.Products = {
-	InstantConvert = { Id = 0, Robux = 25, Tag = "INSTANT!",  Name = "Instant Convert", Description = "Turn your whole backpack into honey now." },
-	FieldBooster = { Id = 0, Robux = 49, Name = "Field Booster", Description = "2x pollen in your current field for 10 min.", Duration = 600, Multiplier = 2 },
-	HoneyPackS = { Id = 0, Robux = 99, Name = "Honey Pack S", Description = "Honey that scales with your backpack." },
-	HoneyPackL = { Id = 0, Robux = 399, Tag = "BEST VALUE!",  Name = "Honey Pack L", Description = "5.5x the small honey pack." },
-	RoyalEgg = { Id = 0, Robux = 149, Tag = "LEGENDARY ODDS",  Name = "Royal Egg", Description = "One Royal Egg (odds shown in the Egg shop).", RandomItem = true },
-	MutationSerum = { Id = 0, Robux = 99, Name = "Mutation Serum", Description = "Guaranteed mutation, never a downgrade.", RandomItem = true },
+	InstantConvert = { Id = 3716932858, Robux = 25, Tag = "INSTANT!",  Name = "Instant Convert", Description = "Turn your whole backpack into honey now." },
+	FieldBooster = { Id = 3716932981, Robux = 49, Name = "Field Booster", Description = "2x pollen in your current field for 10 min.", Duration = 600, Multiplier = 2 },
+	HoneyPackS = { Id = 3716933058, Robux = 99, Name = "Honey Pack S", Description = "Honey that scales with your backpack." },
+	HoneyPackL = { Id = 3716933136, Robux = 399, Tag = "BEST VALUE!",  Name = "Honey Pack L", Description = "5.5x the small honey pack." },
+	RoyalEgg = { Id = 3716933240, Robux = 149, Tag = "LEGENDARY ODDS",  Name = "Royal Egg", Description = "One Royal Egg (odds shown in the Egg shop).", RandomItem = true },
+	MutationSerum = { Id = 3716933299, Robux = 99, Name = "Mutation Serum", Description = "Guaranteed mutation, never a downgrade.", RandomItem = true },
 }
 Config.ProductOrder = { "InstantConvert", "FieldBooster", "HoneyPackS", "HoneyPackL", "RoyalEgg", "MutationSerum" }
 
 Config.Gamepasses = {
-	ExtraSlots = { Id = 0, Robux = 199, Tag = "+2 BEES",  Name = "+2 Hive Slots", Description = "Unlocks hive cells 36 and 37." },
-	VIPField = { Id = 0, Robux = 299, Tag = "POPULAR",  Name = "VIP Field Access", Description = "Enter the Royal Orchard (6x) + VIP tag." },
-	AutoConvert = { Id = 0, Robux = 399, Tag = "MUST HAVE",  Name = "Auto-Convert Companion", Description = "Converts pollen remotely when your bag is full." },
+	ExtraSlots = { Id = 2006985861, Robux = 199, Tag = "+2 BEES",  Name = "+2 Hive Slots", Description = "Unlocks hive cells 36 and 37." },
+	VIPField = { Id = 2005353878, Robux = 299, Tag = "POPULAR",  Name = "VIP Field Access", Description = "Enter the Royal Orchard (6x) + VIP tag." },
+	AutoConvert = { Id = 2008832502, Robux = 399, Tag = "MUST HAVE",  Name = "Auto-Convert Companion", Description = "Converts pollen remotely when your bag is full." },
 }
 Config.GamepassOrder = { "ExtraSlots", "VIPField", "AutoConvert" }
 
@@ -456,16 +456,16 @@ Config.HoneyLadder = {
 	-- price triples every step (x2 = 3, x4 = 9, x8 = 27 ...) up to 1999; the ladder ends at x1024
 	-- (tier 10). The 1999 steps may share one developer product.
 	Steps = {
-		{ Id = 0, Robux = 3 },
-		{ Id = 0, Robux = 9 },
-		{ Id = 0, Robux = 27 },
-		{ Id = 0, Robux = 81 },
-		{ Id = 0, Robux = 243 },
-		{ Id = 0, Robux = 729 },
-		{ Id = 0, Robux = 1999 },
-		{ Id = 0, Robux = 1999 },
-		{ Id = 0, Robux = 1999 },
-		{ Id = 0, Robux = 1999 },
+		{ Id = 3716933365, Robux = 3 }, -- x2
+		{ Id = 3716933434, Robux = 9 }, -- x4
+		{ Id = 3716933503, Robux = 27 }, -- x8
+		{ Id = 3716933603, Robux = 81 }, -- x16
+		{ Id = 3716933672, Robux = 243 }, -- x32
+		{ Id = 3716933790, Robux = 729 }, -- x64
+		{ Id = 3716933830, Robux = 1999 }, -- x128
+		{ Id = 3716933890, Robux = 1999 }, -- x256
+		{ Id = 3716933928, Robux = 1999 }, -- x512
+		{ Id = 3716933995, Robux = 1999 }, -- x1024
 	},
 }
 Config.HoneyLadder.MaxTier = #Config.HoneyLadder.Steps

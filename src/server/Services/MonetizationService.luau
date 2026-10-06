@@ -78,9 +78,19 @@ function ProductGrants.MutationSerum(player, data)
 	Notify.Player(player, "Mutation Serum added. Use it on a bee in the Hive menu.", "rare")
 end
 
--- Honey Forever ladder: every purchase adds one tier (x2 honey each), forever
-function ProductGrants.HoneyLadder(player, data)
-	data.HoneyTier = math.min((data.HoneyTier or 0) + 1, Config.HoneyLadder.MaxTier)
+-- Honey Forever ladder: every purchase adds one tier (x2 honey each), up to Config.HoneyLadder.MaxTier.
+-- Each step has its own product; a step older than the player's tier can only be bought by prompting
+-- the product directly (e.g. an exploit buying the 3 R$ step again), so it never climbs the ladder.
+local ladderStepById: { [number]: number } = {}
+
+function ProductGrants.HoneyLadder(player, data, productId: number?)
+	local tier = data.HoneyTier or 0
+	local step = productId and ladderStepById[productId]
+	if step and step < tier then
+		Notify.Player(player, "You already own that Honey Forever step.", "info")
+		return
+	end
+	data.HoneyTier = math.min(tier + 1, Config.HoneyLadder.MaxTier)
 	S.DataService:MarkDirty(player, "HoneyTier")
 	player:SetAttribute("HoneyTier", data.HoneyTier)
 	Notify.Player(player, `Honey Forever upgraded: x{Config.HoneyMultiplier(data.HoneyTier)} honey!`, "rare")
@@ -197,9 +207,10 @@ function MonetizationService:Init(services)
 			passById[def.Id] = name
 		end
 	end
-	for _, step in Config.HoneyLadder.Steps do
+	for index, step in Config.HoneyLadder.Steps do
 		if step.Id ~= 0 then
 			productById[step.Id] = "HoneyLadder"
+			ladderStepById[step.Id] = ladderStepById[step.Id] or index
 		end
 	end
 	self.RequestPurchase = Net.Event("RequestPurchase")
@@ -244,7 +255,7 @@ function MonetizationService:Start()
 		end
 		local grant = ProductGrants[name]
 		local stored = S.DataService:GrantPurchase(player, receipt.PurchaseId, function(data)
-			grant(player, data)
+			grant(player, data, receipt.ProductId)
 		end)
 		if stored then
 			return Enum.ProductPurchaseDecision.PurchaseGranted
