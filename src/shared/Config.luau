@@ -436,7 +436,7 @@ Config.Products = {
 	HoneyPackS = { Id = 0, Robux = 99, Name = "Honey Pack S", Description = "Honey that scales with your backpack." },
 	HoneyPackL = { Id = 0, Robux = 399, Tag = "BEST VALUE!",  Name = "Honey Pack L", Description = "5.5x the small honey pack." },
 	RoyalEgg = { Id = 0, Robux = 149, Tag = "LEGENDARY ODDS",  Name = "Royal Egg", Description = "One Royal Egg (odds shown in the Egg shop).", RandomItem = true },
-	MutationSerum = { Id = 0, Robux = 99, Name = "Mutation Serum", Description = "Guaranteed mutation, never a downgrade." },
+	MutationSerum = { Id = 0, Robux = 99, Name = "Mutation Serum", Description = "Guaranteed mutation, never a downgrade.", RandomItem = true },
 }
 Config.ProductOrder = { "InstantConvert", "FieldBooster", "HoneyPackS", "HoneyPackL", "RoyalEgg", "MutationSerum" }
 
