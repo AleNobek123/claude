@@ -18,6 +18,7 @@ local ORDER = {
 	"RewardService",
 	"EventService",
 	"LeaderboardService",
+	"FeedbackService",
 }
 
 local loaded = {}

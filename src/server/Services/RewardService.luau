@@ -1,8 +1,11 @@
 --[[
 	RewardService
-	First-join starter kit and the daily login streak (day 7 = Silver Egg).
+	First-join starter kit, promo codes, and the Rewards hub. Nothing is granted automatically:
+	the daily login grid, playtime milestones (up to 2 h a day) and social rewards are claimed
+	by hand from the Rewards panel. Honey/treat amounts scale with lifetime honey.
 ]]
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -63,20 +66,134 @@ function RewardService:_starter(player: Player, data)
 	S.HiveService:RefreshCells(player)
 end
 
-function RewardService:_daily(player: Player, data)
-	local today = os.time() // 86400
-	local daily = data.Daily
-	if daily.LastDay == today then
-		return
+-- Rewards hub ------------------------------------------------------------------------------------
+
+local honorStarted = {} -- [player] = { [providerId] = os.clock() when "verify" was pressed }
+
+local function today(): number
+	return os.time() // 86400
+end
+
+local function rollPlaytimeDay(data)
+	local day = today()
+	if data.Playtime.Day ~= day then
+		data.Playtime.Day = day
+		data.Playtime.Seconds = 0
+		data.Playtime.Claimed = {}
 	end
-	daily.Streak = (daily.LastDay == today - 1) and daily.Streak + 1 or 1
-	daily.LastDay = today
-	local reward = Config.DailyRewards[(daily.Streak - 1) % #Config.DailyRewards + 1]
+end
+
+-- Which day of the 7-day grid would be claimed now (streak continues if yesterday was claimed)
+local function dailyIndex(data): (number, boolean)
+	local daily = data.Daily
+	local day = today()
+	if daily.LastDay == day then
+		return (daily.Streak - 1) % #Config.Rewards.Daily + 1, false
+	end
+	local streak = (daily.LastDay == day - 1) and daily.Streak + 1 or 1
+	return (streak - 1) % #Config.Rewards.Daily + 1, true
+end
+
+function RewardService:State(player: Player)
+	local data = S.DataService:Get(player)
+	if not data then
+		return nil
+	end
+	rollPlaytimeDay(data)
+	local index, claimable = dailyIndex(data)
+	local social = {}
+	for _, provider in Config.Rewards.Social do
+		local started = honorStarted[player] and honorStarted[player][provider.Id]
+		social[provider.Id] = {
+			Claimed = data.Social[provider.Id] == true,
+			Ready = started ~= nil and os.clock() - started >= (provider.Wait or 0),
+			Started = started ~= nil,
+		}
+	end
+	return {
+		Scale = Config.RewardScale(data.TotalHoney),
+		Daily = { Index = index, Claimable = claimable, Streak = data.Daily.Streak, NextIn = (today() + 1) * 86400 - os.time() },
+		Playtime = { Seconds = data.Playtime.Seconds, Claimed = data.Playtime.Claimed },
+		Social = social,
+	}
+end
+
+function RewardService:ClaimDaily(player: Player)
+	local data = S.DataService:Get(player)
+	if not data then
+		return false, "Data not loaded yet"
+	end
+	local index, claimable = dailyIndex(data)
+	if not claimable then
+		return false, "Come back tomorrow!"
+	end
+	local daily = data.Daily
+	daily.Streak = (daily.LastDay == today() - 1) and daily.Streak + 1 or 1
+	daily.LastDay = today()
+	local reward = Config.ScaleReward(Config.Rewards.Daily[index], data.TotalHoney)
 	self:Grant(player, data, reward)
 	S.DataService:MarkDirty(player, "Daily")
-	task.delay(6, function()
-		Notify.Player(player, `Day {daily.Streak} login reward: {describe(reward)}!`, "good")
-	end)
+	return true, `Day {index} reward: {describe(reward)}`
+end
+
+function RewardService:ClaimPlaytime(player: Player, index: number)
+	local data = S.DataService:Get(player)
+	local milestone = typeof(index) == "number" and Config.Rewards.Playtime[index]
+	if not data or not milestone then
+		return false, "Invalid reward"
+	end
+	rollPlaytimeDay(data)
+	if data.Playtime.Claimed[tostring(index)] then
+		return false, "Already claimed"
+	end
+	if data.Playtime.Seconds < milestone.Minutes * 60 then
+		return false, "Keep playing to unlock this reward"
+	end
+	data.Playtime.Claimed[tostring(index)] = true
+	local reward = Config.ScaleReward(milestone.Reward, data.TotalHoney)
+	self:Grant(player, data, reward)
+	S.DataService:MarkDirty(player, "Playtime")
+	return true, `Playtime reward: {describe(reward)}`
+end
+
+-- Social providers: "Group" asks Roblox, "Honor" trusts the player after a short wait
+function RewardService:Social(player: Player, id: string)
+	local data = S.DataService:Get(player)
+	local provider
+	for _, p in Config.Rewards.Social do
+		if p.Id == id then
+			provider = p
+		end
+	end
+	if not data or not provider then
+		return false, "Invalid reward"
+	end
+	if data.Social[id] then
+		return false, "Already claimed"
+	end
+	if provider.Provider == "Group" then
+		if Config.Rewards.GroupId == 0 then
+			return false, "Group reward is coming soon!"
+		end
+		local ok, member = pcall(player.IsInGroup, player, Config.Rewards.GroupId)
+		if not ok or not member then
+			return false, "Join the group first, then press claim again"
+		end
+	else
+		honorStarted[player] = honorStarted[player] or {}
+		local started = honorStarted[player][id]
+		if not started then
+			honorStarted[player][id] = os.clock()
+			return false, "Thanks! Come back in a few seconds to claim"
+		end
+		if os.clock() - started < (provider.Wait or 0) then
+			return false, "Almost there..."
+		end
+	end
+	data.Social[id] = true
+	self:Grant(player, data, Config.ScaleReward(provider.Reward, data.TotalHoney))
+	S.DataService:MarkDirty(player, "Social")
+	return true, `{provider.Name}: {describe(Config.ScaleReward(provider.Reward, data.TotalHoney))}`
 end
 
 -- Promo codes: case-insensitive, once per player. Returns (ok, message).
@@ -138,12 +255,60 @@ function RewardService:Init(services)
 	self.RedeemCode = Net.Function("RedeemCode")
 	self.SaveSettings = Net.Event("SaveSettings")
 	self.TutorialStep = Net.Event("TutorialStep")
+	self.Rewards = Net.Function("Rewards")
+	self.MarkSeen = Net.Event("MarkSeen")
 end
 
 function RewardService:Start()
 	S.DataService:OnLoaded(function(player, data)
 		self:_starter(player, data)
-		self:_daily(player, data)
+	end)
+	self.Rewards.OnServerInvoke = function(player, action, arg)
+		if not Net.Allow(player, "Rewards", 0.3) then
+			return false, "Slow down"
+		end
+		if action == "State" then
+			return true, self:State(player)
+		elseif action == "Daily" then
+			return self:ClaimDaily(player)
+		elseif action == "Playtime" then
+			return self:ClaimPlaytime(player, arg)
+		elseif action == "Social" then
+			return self:Social(player, arg)
+		end
+		return false, "Unknown action"
+	end
+	-- Codex entries the player has looked at (drives the "!" badge)
+	self.MarkSeen.OnServerEvent:Connect(function(player, kind, ids)
+		local data = S.DataService:Get(player)
+		if not data or kind ~= "Codex" or typeof(ids) ~= "table" or not Net.Allow(player, "MarkSeen", 0.5) then
+			return
+		end
+		for _, id in ids do
+			if typeof(id) == "string" and data.Codex[id] then
+				data.CodexSeen[id] = true
+			end
+		end
+		S.DataService:MarkDirty(player, "CodexSeen")
+	end)
+	-- playtime accumulates on the server (10 s steps), saved with the profile
+	task.spawn(function()
+		while true do
+			task.wait(10)
+			for _, player in Players:GetPlayers() do
+				local data = S.DataService:Get(player)
+				if data then
+					rollPlaytimeDay(data)
+					data.Playtime.Seconds += 10
+					if data.Playtime.Seconds % 30 == 0 then
+						S.DataService:MarkDirty(player, "Playtime")
+					end
+				end
+			end
+		end
+	end)
+	Players.PlayerRemoving:Connect(function(player)
+		honorStarted[player] = nil
 	end)
 	self.RedeemCode.OnServerInvoke = function(player, code)
 		if not Net.Allow(player, "RedeemCode", 1) then

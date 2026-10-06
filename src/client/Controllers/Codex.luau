@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
 local BeeData = require(Shared.BeeData)
+local Net = require(Shared.Net)
 local Viewport = require(script.Parent.Viewport)
 
 local Codex = {}
@@ -82,6 +83,21 @@ function Codex:Start()
 		self:_render()
 		for _, entry in built do
 			Juice.Pop(entry.Card, math.random() * 0.15)
+		end
+		-- opening the album clears the "!" badge for new discoveries
+		local data = C.State.Data
+		local unseen = {}
+		for id in data and data.Codex or {} do
+			if not (data.CodexSeen and data.CodexSeen[id]) then
+				table.insert(unseen, id)
+			end
+		end
+		if #unseen > 0 then
+			Net.Event("MarkSeen"):FireServer("Codex", unseen)
+			for _, id in unseen do
+				data.CodexSeen = data.CodexSeen or {}
+				data.CodexSeen[id] = true
+			end
 		end
 	end
 	C.State:OnChange({ "Codex" }, function()

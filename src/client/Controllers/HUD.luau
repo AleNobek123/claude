@@ -39,7 +39,9 @@ local MENU = {
 	{ Name = "Shop", Icon = "Shop", Tooltip = "Shop", Color = Color3.fromRGB(255, 140, 36) },
 	{ Name = "Eggs", Icon = "Egg", Tooltip = "Eggs & odds", Color = Color3.fromRGB(255, 84, 160) },
 	{ Name = "Codex", Icon = "Book", Tooltip = "Bee album", Color = Color3.fromRGB(255, 196, 30) },
-	{ Name = "Store", Icon = "Gift", Tooltip = "Robux store", Color = Color3.fromRGB(240, 58, 72) },
+	{ Name = "Rewards", Icon = "Gift", Tooltip = "Free rewards", Color = Color3.fromRGB(60, 200, 110) },
+	{ Name = "Store", Icon = "Star", Tooltip = "Robux store", Color = Color3.fromRGB(240, 58, 72) },
+	{ Name = "Feedback", Icon = "Speaker", Tooltip = "Report a bug / review", Color = Color3.fromRGB(120, 130, 255) },
 	{ Name = "Settings", Icon = "Gear", Tooltip = "Settings & codes", Color = Color3.fromRGB(38, 180, 160) },
 }
 local TILE = 64
@@ -187,7 +189,7 @@ function HUD:_build()
 	local menu = UI.Create("Frame", {
 		Name = "Menu",
 		Position = UDim2.fromOffset(18, 200),
-		Size = UDim2.fromOffset(2 * TILE + GAP, 4 * (TILE + GAP)),
+		Size = UDim2.fromOffset(3 * (TILE + GAP) - GAP, 3 * (TILE + GAP)),
 		BackgroundTransparency = 1,
 		Parent = screen,
 	}, {
@@ -200,6 +202,7 @@ function HUD:_build()
 		UI.Create("UIScale", { Name = "Responsive" }),
 	})
 	self.Menu = menu
+	self.MenuButtons = {}
 	for i, item in MENU do
 		local button = tile(menu, i, item, function()
 			if item.Name == "Home" then
@@ -208,6 +211,7 @@ function HUD:_build()
 				UI:Toggle(item.Name)
 			end
 		end)
+		self.MenuButtons[item.Name] = button
 		Juice.Pop(button, i * 0.04)
 	end
 
@@ -362,7 +366,7 @@ function HUD:_layout()
 	local top = 10 + STATS_HEIGHT * scale + 16
 	self.Menu.Position = UDim2.fromOffset(18, top)
 	local bottom = touch and height * 0.62 or height - 16
-	local columns = 2
+	local columns = 3
 	while columns < #MENU and top + math.ceil(#MENU / columns) * (TILE + GAP) * scale > bottom do
 		columns += 1
 	end

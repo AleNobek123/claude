@@ -51,11 +51,12 @@ local function build(text: string, style): CanvasGroup
 		Name = "Notification",
 		LayoutOrder = order,
 		AnchorPoint = Vector2.new(0.5, 0),
-		Size = UDim2.new(1, 0, 0, 44),
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
 		GroupTransparency = 1,
 		Parent = holder,
-	})
+	}, { UI.Create("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4) }) })
 	local scale = UI.Create("UIScale", { Scale = 0.6, Parent = group })
 	-- a soft dark glow keeps the text readable over bright grass without drawing a box
 	UI.Create("ImageLabel", {
@@ -71,25 +72,28 @@ local function build(text: string, style): CanvasGroup
 	})
 	local row = UI.Create("Frame", {
 		Name = "Row",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(1, 1),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0),
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
 		Parent = group,
 	}, { UI.List(10, true, Enum.HorizontalAlignment.Center) })
 	UI.Icon(style.Icon, { Name = "Icon", LayoutOrder = 1, Size = UDim2.fromOffset(38, 38), Parent = row })
+	-- long messages wrap onto more lines instead of running off the screen centre
 	local label = UI.Create("TextLabel", {
 		Name = "Text",
 		LayoutOrder = 2,
-		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.fromOffset(0, 40),
+		AutomaticSize = Enum.AutomaticSize.XY,
+		Size = UDim2.fromOffset(0, 0),
 		BackgroundTransparency = 1,
 		Font = UI.Font,
-		TextSize = 27,
+		TextSize = 26,
+		TextWrapped = true,
 		TextColor3 = Color3.new(1, 1, 1),
 		Text = text,
 		Parent = row,
-	})
+	}, { UI.Create("UISizeConstraint", { MaxSize = Vector2.new(520, 200) }) })
 	UI.Create("UIStroke", { Color = style.Stroke, Thickness = 3, Transparency = 0.05, Parent = label })
 	local gradient = UI.Create("UIGradient", { Rotation = 90, Color = ColorSequence.new(style.Top, style.Bottom), Parent = label })
 	if style.Rainbow then
@@ -185,11 +189,11 @@ function NotificationCenter:Start()
 		Name = "Notifications",
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 176),
-		Size = UDim2.new(0.6, 0, 0, 4 * 50),
+		Size = UDim2.new(0.6, 0, 0, 4 * 64),
 		BackgroundTransparency = 1,
 		ZIndex = 40,
 		Parent = UI:_screen(),
-	}, { UI.List(6, false, Enum.HorizontalAlignment.Center), UI.Create("UISizeConstraint", { MaxSize = Vector2.new(720, 200) }) })
+	}, { UI.List(6, false, Enum.HorizontalAlignment.Center), UI.Create("UISizeConstraint", { MaxSize = Vector2.new(720, 260) }) })
 	holder.UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 	UI.Notify = function(text, kind, opts)
 		self:Push(text, kind, opts)

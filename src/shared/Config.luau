@@ -102,27 +102,62 @@ Config.Fields = {
 	},
 }
 
--- Tools ----------------------------------------------------------------------
+-- Equipment ---------------------------------------------------------------------------
+-- Lists only name things and pick a look; EconomicScaling fills Price and stats from the tier
+-- (index), so every step costs exactly PriceGrowth x the previous one.
+-- Model/Variant: reuse another item's mesh with a new colour and material (premium reskins).
 
-Config.Collectors = {
-	{ Id = "Scoop", Name = "Scoop", Price = 0, Power = 2, Radius = 3, Cooldown = 0.8, Shape = "Scoop", Color = Color3.fromRGB(205, 165, 95) },
-	{ Id = "Rake", Name = "Rake", Price = 800, Power = 3, Radius = 5, Cooldown = 0.75, Shape = "Rake", Color = Color3.fromRGB(150, 110, 70) },
-	{ Id = "Clippers", Name = "Clippers", Price = 5000, Power = 5, Radius = 6, Cooldown = 0.65, Shape = "Rake", Color = Color3.fromRGB(120, 200, 120) },
-	{ Id = "Vacuum", Name = "Vacuum", Price = 25000, Power = 7, Radius = 8, Cooldown = 0.6, Shape = "Vacuum", Color = Color3.fromRGB(90, 160, 230) },
-	{ Id = "HoneyWand", Name = "Honey Wand", Price = 150000, Power = 12, Radius = 9, Cooldown = 0.55, Shape = "Wand", Color = Color3.fromRGB(255, 190, 40) },
-	{ Id = "StormHarvester", Name = "Storm Harvester", Price = 1000000, Power = 20, Radius = 11, Cooldown = 0.5, Shape = "Vacuum", Color = Color3.fromRGB(130, 90, 230) },
-	{ Id = "GoldenReaper", Name = "Golden Reaper", Price = 10000000, Power = 35, Radius = 13, Cooldown = 0.45, Shape = "Wand", Color = Color3.fromRGB(255, 215, 80) },
-}
+local EconomicScaling = require(script.Parent.EconomicScaling)
+Config.Economy = EconomicScaling
 
-Config.Backpacks = {
-	{ Id = "Pouch", Name = "Pouch", Price = 0, Capacity = 200, Shape = "Pouch", Color = Color3.fromRGB(196, 150, 100) },
-	{ Id = "Jar", Name = "Jar", Price = 1000, Capacity = 750, Shape = "Canister", Color = Color3.fromRGB(200, 230, 255) },
-	{ Id = "Canister", Name = "Canister", Price = 7500, Capacity = 2500, Shape = "Canister", Color = Color3.fromRGB(150, 190, 120) },
-	{ Id = "Satchel", Name = "Satchel", Price = 40000, Capacity = 8000, Shape = "Pouch", Color = Color3.fromRGB(120, 90, 160) },
-	{ Id = "HivePack", Name = "Hive Pack", Price = 250000, Capacity = 25000, Shape = "Tank", Color = Color3.fromRGB(255, 190, 40) },
-	{ Id = "PorcelainTank", Name = "Porcelain Tank", Price = 1500000, Capacity = 80000, Shape = "Tank", Color = Color3.fromRGB(235, 240, 250) },
-	{ Id = "RoyalReservoir", Name = "Royal Reservoir", Price = 12000000, Capacity = 300000, Shape = "Tank", Color = Color3.fromRGB(255, 120, 170) },
-}
+Config.Collectors = EconomicScaling.Build("Collectors", {
+	{ Id = "Scoop", Name = "Scoop", Shape = "Scoop", Color = Color3.fromRGB(205, 165, 95) },
+	{ Id = "Rake", Name = "Rake", Shape = "Rake", Color = Color3.fromRGB(150, 110, 70) },
+	{ Id = "Clippers", Name = "Clippers", Shape = "Rake", Color = Color3.fromRGB(120, 200, 120) },
+	{ Id = "Vacuum", Name = "Vacuum", Shape = "Vacuum", Color = Color3.fromRGB(90, 160, 230) },
+	{ Id = "HoneyWand", Name = "Honey Wand", Shape = "Wand", Color = Color3.fromRGB(255, 190, 40) },
+	{ Id = "StormHarvester", Name = "Storm Harvester", Shape = "Vacuum", Color = Color3.fromRGB(130, 90, 230) },
+	{ Id = "GoldenReaper", Name = "Golden Reaper", Shape = "Wand", Color = Color3.fromRGB(255, 215, 80) },
+	{ Id = "CrystalScoop", Name = "Crystal Scoop", Shape = "Scoop", Model = "Scoop", Variant = { Color = Color3.fromRGB(130, 230, 255), Material = Enum.Material.Glass } },
+	{ Id = "EmberRake", Name = "Ember Rake", Shape = "Rake", Model = "Rake", Variant = { Color = Color3.fromRGB(255, 110, 30), Material = Enum.Material.Neon } },
+	{ Id = "FrostClippers", Name = "Frost Clippers", Shape = "Rake", Model = "Clippers", Variant = { Color = Color3.fromRGB(190, 235, 255), Material = Enum.Material.Ice } },
+	{ Id = "NebulaVacuum", Name = "Nebula Vacuum", Shape = "Vacuum", Model = "Vacuum", Variant = { Color = Color3.fromRGB(150, 70, 255), Material = Enum.Material.Neon } },
+	{ Id = "DiamondWand", Name = "Diamond Wand", Shape = "Wand", Model = "HoneyWand", Variant = { Color = Color3.fromRGB(235, 250, 255), Material = Enum.Material.Glass } },
+	{ Id = "ThunderHarvester", Name = "Thunder Harvester", Shape = "Vacuum", Model = "StormHarvester", Variant = { Color = Color3.fromRGB(255, 240, 80), Material = Enum.Material.Neon } },
+	{ Id = "RoyalReaper", Name = "Royal Reaper", Shape = "Wand", Model = "GoldenReaper", Variant = { Color = Color3.fromRGB(255, 150, 210), Material = Enum.Material.Foil } },
+})
+
+Config.Backpacks = EconomicScaling.Build("Backpacks", {
+	{ Id = "Pouch", Name = "Pouch", Shape = "Pouch", Color = Color3.fromRGB(196, 150, 100) },
+	{ Id = "Jar", Name = "Jar", Shape = "Canister", Color = Color3.fromRGB(200, 230, 255) },
+	{ Id = "Canister", Name = "Canister", Shape = "Canister", Color = Color3.fromRGB(150, 190, 120) },
+	{ Id = "Satchel", Name = "Satchel", Shape = "Pouch", Color = Color3.fromRGB(120, 90, 160) },
+	{ Id = "HivePack", Name = "Hive Pack", Shape = "Tank", Color = Color3.fromRGB(255, 190, 40) },
+	{ Id = "PorcelainTank", Name = "Porcelain Tank", Shape = "Tank", Color = Color3.fromRGB(235, 240, 250) },
+	{ Id = "RoyalReservoir", Name = "Royal Reservoir", Shape = "Tank", Color = Color3.fromRGB(255, 120, 170) },
+	{ Id = "CrystalJar", Name = "Crystal Jar", Shape = "Canister", Model = "Jar", Variant = { Color = Color3.fromRGB(150, 235, 255), Material = Enum.Material.Glass } },
+	{ Id = "LavaCanister", Name = "Lava Canister", Shape = "Canister", Model = "Canister", Variant = { Color = Color3.fromRGB(255, 90, 20), Material = Enum.Material.Neon } },
+	{ Id = "ShadowSatchel", Name = "Shadow Satchel", Shape = "Pouch", Model = "Satchel", Variant = { Color = Color3.fromRGB(70, 40, 110), Material = Enum.Material.Glass } },
+	{ Id = "FrostHive", Name = "Frost Hive Pack", Shape = "Tank", Model = "HivePack", Variant = { Color = Color3.fromRGB(190, 235, 255), Material = Enum.Material.Ice } },
+	{ Id = "GoldenTank", Name = "Golden Tank", Shape = "Tank", Model = "PorcelainTank", Variant = { Color = Color3.fromRGB(255, 205, 60), Material = Enum.Material.Foil } },
+	{ Id = "GalaxyReservoir", Name = "Galaxy Reservoir", Shape = "Tank", Model = "RoyalReservoir", Variant = { Color = Color3.fromRGB(140, 60, 255), Material = Enum.Material.Neon } },
+	{ Id = "InfinityPack", Name = "Infinity Pack", Shape = "Pouch", Model = "Pouch", Variant = { Color = Color3.fromRGB(255, 240, 140), Material = Enum.Material.Neon } },
+})
+
+-- Boots: walk-speed multiplier (Humanoid.WalkSpeed = BaseWalkSpeed * Speed)
+Config.BaseWalkSpeed = 16
+Config.Boots = EconomicScaling.Build("Boots", {
+	{ Id = "FlipFlops", Name = "Flip-Flops", Color = Color3.fromRGB(110, 190, 255) },
+	{ Id = "Sneakers", Name = "Sneakers", Color = Color3.fromRGB(240, 240, 245), Trim = Color3.fromRGB(255, 80, 80) },
+	{ Id = "HikingBoots", Name = "Hiking Boots", Color = Color3.fromRGB(140, 96, 56), Trim = Color3.fromRGB(230, 200, 120) },
+	{ Id = "RainBoots", Name = "Rain Boots", Color = Color3.fromRGB(255, 210, 40), Trim = Color3.fromRGB(60, 60, 70) },
+	{ Id = "SpeedySneakers", Name = "Speedy Sneakers", Color = Color3.fromRGB(80, 220, 120), Trim = Color3.fromRGB(255, 255, 255) },
+	{ Id = "HoneyBoots", Name = "Honey Boots", Color = Color3.fromRGB(255, 170, 30), Trim = Color3.fromRGB(255, 240, 160), Material = Enum.Material.Glass },
+	{ Id = "CloudBoots", Name = "Cloud Boots", Color = Color3.fromRGB(245, 250, 255), Trim = Color3.fromRGB(160, 210, 255), Trail = true },
+	{ Id = "RocketBoots", Name = "Rocket Boots", Color = Color3.fromRGB(230, 60, 60), Trim = Color3.fromRGB(255, 200, 60), Material = Enum.Material.Metal, Trail = true },
+	{ Id = "LightningBoots", Name = "Lightning Boots", Color = Color3.fromRGB(80, 120, 255), Trim = Color3.fromRGB(255, 255, 120), Material = Enum.Material.Neon, Trail = true },
+	{ Id = "RoyalBoots", Name = "Royal Wing Boots", Color = Color3.fromRGB(255, 215, 80), Trim = Color3.fromRGB(255, 120, 200), Material = Enum.Material.Foil, Trail = true },
+})
 
 -- Conversion -------------------------------------------------------------------
 
@@ -272,16 +307,64 @@ Config.Tutorial = {
 	{ Id = "Hatch", Text = "Hatch an egg at the Golden Nest" },
 }
 
--- Daily login streak ---------------------------------------------------------------------
+-- Rewards hub (everything is claimed by hand in the Rewards panel) ----------------------------
 
-Config.DailyRewards = {
-	{ Honey = 500 },
-	{ Treats = 5 },
-	{ Honey = 2500 },
-	{ Eggs = { Basic = 1 } },
-	{ Honey = 10000 },
-	{ Treats = 20 },
-	{ Eggs = { Silver = 1 } },
+Config.Rewards = {
+	-- 7-day login grid; missing a day restarts at day 1
+	Daily = {
+		{ Honey = 500 },
+		{ Treats = 5 },
+		{ Honey = 2500 },
+		{ Eggs = { Basic = 1 } },
+		{ Honey = 10000 },
+		{ Treats = 20 },
+		{ Eggs = { Silver = 1 } },
+	},
+	-- minutes played today (resets daily), up to 2 hours
+	Playtime = {
+		{ Minutes = 5, Reward = { Honey = 400 } },
+		{ Minutes = 10, Reward = { Treats = 3 } },
+		{ Minutes = 15, Reward = { Honey = 1200 } },
+		{ Minutes = 30, Reward = { Eggs = { Basic = 1 } } },
+		{ Minutes = 45, Reward = { Honey = 4000 } },
+		{ Minutes = 60, Reward = { Treats = 15 } },
+		{ Minutes = 90, Reward = { Honey = 12000 } },
+		{ Minutes = 120, Reward = { Eggs = { Silver = 1 } } },
+	},
+	-- social providers: "Group" checks membership (set GroupId), "Honor" trusts the player after Wait seconds
+	GroupId = 0,
+	Social = {
+		{ Id = "Like", Name = "Like the game", Icon = "Star", Provider = "Honor", Wait = 20, Reward = { Honey = 2000 } },
+		{ Id = "Group", Name = "Join our group", Icon = "Bee", Provider = "Group", Reward = { Honey = 5000, Treats = 10 } },
+		{ Id = "Follow", Name = "Follow the creator", Icon = "Gift", Provider = "Honor", Wait = 20, Reward = { Honey = 2000 } },
+	},
+}
+
+-- Honey and treat rewards grow with lifetime honey so late players still care about them
+function Config.RewardScale(totalHoney: number?): number
+	return math.clamp(math.sqrt((totalHoney or 0) / 20000), 1, 500)
+end
+
+function Config.ScaleReward(reward, totalHoney: number?)
+	local scale = Config.RewardScale(totalHoney)
+	local out = {}
+	if reward.Honey then
+		out.Honey = Config.Economy.Round(reward.Honey * scale)
+	end
+	if reward.Treats then
+		out.Treats = math.floor(reward.Treats * math.sqrt(scale) + 0.5)
+	end
+	out.Eggs = reward.Eggs
+	return out
+end
+
+Config.DailyRewards = Config.Rewards.Daily -- legacy name
+
+Config.Feedback = {
+	MinLength = 10,
+	MaxLength = 500,
+	Cooldown = 60, -- seconds between submissions per player
+	Webhook = "", -- optional HTTPS endpoint that receives each report as JSON
 }
 
 -- Monetization (set real IDs after creating products on the Creator Dashboard) -------------
@@ -345,5 +428,6 @@ end
 Config.FieldById = index(Config.Fields)
 Config.CollectorById = index(Config.Collectors)
 Config.BackpackById = index(Config.Backpacks)
+Config.BootsById = index(Config.Boots)
 
 return Config

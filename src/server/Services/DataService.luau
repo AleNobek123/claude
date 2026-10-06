@@ -61,6 +61,11 @@ DataService.Template = {
 	Settings = { Music = true, Sfx = true, Graphics = "High" },
 	Codes = {}, -- [CODE] = true
 	HoneyTier = 0, -- Honey Forever ladder: honey x Config.HoneyMultiplier(tier)
+	Boots = "FlipFlops",
+	OwnedBoots = { FlipFlops = true },
+	Playtime = { Day = 0, Seconds = 0, Claimed = {} }, -- today's play time and claimed milestones
+	Social = {}, -- [providerId] = true once claimed
+	CodexSeen = {}, -- bees whose Codex entry the player has opened
 }
 
 type Profile = {

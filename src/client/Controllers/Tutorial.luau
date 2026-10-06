@@ -4,8 +4,8 @@
 	state (in a field? backpack full? converting? owns an egg?), so the guide always points at the
 	next useful thing even when the player wanders off-script:
 	  Field -> Collect -> Convert (when the bag is full) -> Hatch (after the first honey)
-	Visuals: a bouncing 3D arrow over the goal, bouncing chevron arrows along the ground route,
-	a 2D arrow at the screen edge when the goal is off-screen, and a floating hint above the head.
+	Visuals: a bouncing 3D arrow over the goal, bouncing chevron arrows along the ground route
+	and a floating hint above the head. Nothing is shown once the tutorial is finished.
 	Milestones are saved on the server (TutorialStep): 3 = first honey, 5 = first hatch (done).
 ]]
 
@@ -30,7 +30,6 @@ local arrow: Model?
 local chevrons = {} -- { Left, Right }
 local hint: BillboardGui?
 local hintText: string? = nil
-local edgeArrow: Frame
 local savedStep = 1
 local honeyAtStart = 0
 local beesAtStart = 0
@@ -285,34 +284,6 @@ function Tutorial:_clear()
 		arrow.Parent = nil
 	end
 	self:_hideChevrons()
-	edgeArrow.Visible = false
-end
-
--- 2D ">" arrow from two rounded, outlined bars (no image asset needed); rotated to point at the goal
-local function buildEdgeArrow(parent: Instance): Frame
-	local holder = UI.Create("Frame", {
-		Name = "TutorialEdgeArrow",
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Size = UDim2.fromOffset(70, 70),
-		BackgroundTransparency = 1,
-		Visible = false,
-		Parent = parent,
-	})
-	local length, tip = 40, Vector2.new(56, 35)
-	for _, angle in { 40, -40 } do
-		-- GUI rotation pivots on the centre, so place each centre so its right end sits on the tip
-		local a = math.rad(angle)
-		local center = tip - Vector2.new(math.cos(a), math.sin(a)) * (length / 2)
-		UI.Create("Frame", {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromOffset(center.X, center.Y),
-			Size = UDim2.fromOffset(length, 15),
-			Rotation = angle,
-			BackgroundColor3 = Color3.new(1, 1, 1),
-			Parent = holder,
-		}, { UI.Round(), UI.Gradient(Color3.fromRGB(255, 236, 120), Color3.fromRGB(255, 160, 20)), UI.Create("UIStroke", { Color = Color3.fromRGB(110, 50, 0), Thickness = 3 }) })
-	end
-	return holder
 end
 
 -- Ground route: follow the roads between the hive row and the plaza
@@ -400,33 +371,6 @@ function Tutorial:_updateTrail(from: Vector3, to: Vector3)
 	end
 end
 
--- Screen-edge arrow pointing at an off-screen goal (bounces toward it)
-function Tutorial:_updateEdgeArrow(goal: Vector3)
-	local camera = Workspace.CurrentCamera
-	local screenPos, onScreen = camera:WorldToViewportPoint(goal)
-	if onScreen and screenPos.Z > 0 then
-		edgeArrow.Visible = false
-		return
-	end
-	local viewport = camera.ViewportSize
-	local center = viewport / 2
-	local dir = Vector2.new(screenPos.X, screenPos.Y) - center
-	if screenPos.Z < 0 then
-		dir = -dir
-	end
-	if dir.Magnitude < 1 then
-		dir = Vector2.new(0, 1)
-	end
-	dir = dir.Unit
-	local half = center - Vector2.new(80, 80)
-	local reach = math.min(math.abs(half.X / (dir.X ~= 0 and dir.X or 1e-6)), math.abs(half.Y / (dir.Y ~= 0 and dir.Y or 1e-6)))
-	local bounce = math.abs(math.sin(os.clock() * 5)) * 14
-	local pos = center + dir * (reach + bounce - 14)
-	edgeArrow.Visible = true
-	edgeArrow.Position = UDim2.fromOffset(pos.X, pos.Y)
-	edgeArrow.Rotation = math.deg(math.atan2(dir.Y, dir.X))
-end
-
 -- Public: show a temporary route to a nest (Eggs panel "Find nest")
 function Tutorial:Guide(kind: string, index: number)
 	if kind == "Nest" then
@@ -438,8 +382,6 @@ function Tutorial:Start()
 	folder = Instance.new("Folder")
 	folder.Name = "TutorialGuide"
 	folder.Parent = Workspace
-	local gui = UI.Create("ScreenGui", { Name = "TutorialArrows", IgnoreGuiInset = true, ResetOnSpawn = false, DisplayOrder = 5, Parent = player:WaitForChild("PlayerGui") })
-	edgeArrow = buildEdgeArrow(gui)
 
 	while not C.State.Loaded do
 		task.wait(0.2)
@@ -448,6 +390,10 @@ function Tutorial:Start()
 	savedStep = saved and saved.Step or 1
 	honeyAtStart = C.State.Data.TotalHoney or 0
 	beesAtStart = C.State:BeeCount()
+	-- veterans who never saw the live tutorial skip it
+	if savedStep < MILESTONE_DONE and beesAtStart >= 3 then
+		self:_save(MILESTONE_DONE)
+	end
 
 	Net.Event("HatchResult").OnClientEvent:Connect(function()
 		if savedStep >= MILESTONE_HONEY and savedStep < MILESTONE_DONE then
@@ -494,7 +440,6 @@ function Tutorial:Start()
 		else
 			self:_updateTrail(root.Position, goal)
 		end
-		self:_updateEdgeArrow(goal + Vector3.new(0, 6, 0))
 	end)
 end
 

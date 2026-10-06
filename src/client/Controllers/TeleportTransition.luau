@@ -42,10 +42,11 @@ local function buildCurtain(parent: Instance)
 	})
 	UI.Create("UIGradient", {
 		Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.6),
-			NumberSequenceKeypoint.new(0.18, 0.12),
-			NumberSequenceKeypoint.new(0.82, 0.12),
-			NumberSequenceKeypoint.new(1, 0.6),
+			-- the outer ~18% of the viewport stays see-through, the centre is never fully opaque
+			NumberSequenceKeypoint.new(0, 0.82),
+			NumberSequenceKeypoint.new(0.18, 0.18),
+			NumberSequenceKeypoint.new(0.82, 0.18),
+			NumberSequenceKeypoint.new(1, 0.82),
 		}),
 		Parent = group,
 	})
@@ -65,7 +66,7 @@ local function buildCurtain(parent: Instance)
 		local x = (i - 1) / (DRIP_COUNT - 1) + rng:NextNumber(-0.025, 0.025)
 		-- drips in the middle run longest, so the centre is covered and the edges are not
 		local centre = 1 - math.abs(x - 0.5) * 2
-		local length = 0.35 + centre * 0.55 + rng:NextNumber(-0.06, 0.08)
+		local length = math.min(0.82, 0.32 + centre * 0.5 + rng:NextNumber(-0.06, 0.08))
 		local drip = UI.Create("Frame", {
 			Name = "Drip",
 			AnchorPoint = Vector2.new(0.5, 0),

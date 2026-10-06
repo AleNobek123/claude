@@ -527,8 +527,27 @@ function UI:Toast(text: string, kind: string?)
 	end
 end
 
+-- Warm the content cache so tools, backpacks, bees and icons show their textures immediately
+-- on spawn or when equipment changes (no grey, untextured first frames)
+local function preload()
+	local ContentProvider = game:GetService("ContentProvider")
+	local list = {}
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	for _, name in { "Collectors", "Backpacks", "Boots", "Bees", "Eggs", "Monsters" } do
+		local folder = assets and assets:FindFirstChild(name)
+		if folder then
+			table.insert(list, folder)
+		end
+	end
+	for _, id in Assets.Icons do
+		table.insert(list, id)
+	end
+	pcall(ContentProvider.PreloadAsync, ContentProvider, list)
+end
+
 function UI:Init()
 	self:_screen()
+	task.spawn(preload)
 end
 
 return UI

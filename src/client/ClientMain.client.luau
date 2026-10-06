@@ -21,6 +21,8 @@ local ORDER = {
 	"Eggs",
 	"Promo",
 	"Store",
+	"Rewards",
+	"Feedback",
 	"Codex",
 	"FieldRenderer",
 	"MonsterRenderer",
@@ -30,6 +32,7 @@ local ORDER = {
 	"HatchCutscene",
 	"Nests",
 	"Tutorial",
+	"NotificationBadge",
 }
 
 local loaded = {}

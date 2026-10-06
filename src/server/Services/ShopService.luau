@@ -20,6 +20,7 @@ local S
 local CATEGORY = {
 	Collector = { List = "Collectors", Lookup = "CollectorById", Owned = "OwnedCollectors", Equipped = "Collector" },
 	Backpack = { List = "Backpacks", Lookup = "BackpackById", Owned = "OwnedBackpacks", Equipped = "Backpack" },
+	Boots = { List = "Boots", Lookup = "BootsById", Owned = "OwnedBoots", Equipped = "Boots" },
 }
 
 local function assets(kind: string): Instance?
@@ -83,7 +84,7 @@ function ShopService:GiveTool(player: Player)
 	tool.Name = def.Name
 	tool.CanBeDropped = false
 	tool.RequiresHandle = true
-	tool.ToolTip = `Power {def.Power} • Radius {def.Radius}`
+	tool.ToolTip = `+{def.Power} pollen per flower • {def.Radius} stud radius`
 	tool:SetAttribute("CollectorId", def.Id)
 	tint(tool, def.Color)
 	for _, part in tool:GetDescendants() do
@@ -134,8 +135,13 @@ function ShopService:GiveBackpack(player: Player)
 			end
 		end
 	end
+	-- sit on the torso's back attachment; meshes are rounded and carry straps in front, so the
+	-- pack is pulled in by part of its depth to touch the back instead of floating behind it
 	local depth = model:GetExtentsSize().Z
-	model:PivotTo(torso.CFrame * CFrame.new(0, 0.1, torso.Size.Z / 2 + depth / 2 - 0.05) * CFrame.Angles(0, model:GetAttribute("Yaw") or 0, 0))
+	local back = torso:FindFirstChild("BodyBackAttachment")
+	local anchor = back and back.WorldCFrame or torso.CFrame * CFrame.new(0, 0, torso.Size.Z / 2)
+	local hug = depth * (model:GetAttribute("Hug") or 0.32)
+	model:PivotTo(CFrame.new(anchor.Position) * torso.CFrame.Rotation * CFrame.new(0, 0.05, depth / 2 - hug) * CFrame.Angles(0, model:GetAttribute("Yaw") or 0, 0))
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0 = torso
 	weld.Part1 = main
@@ -143,9 +149,85 @@ function ShopService:GiveBackpack(player: Player)
 	model.Parent = character
 end
 
+-- Boots: a stylised shoe shell on each foot (R15 feet or R6 legs) + walk speed from the tier
+local function buildShoe(foot: BasePart, def, r15: boolean): Model
+	local model = Instance.new("Model")
+	model.Name = "BeeBoot"
+	local size = foot.Size
+	local height = r15 and size.Y + 0.12 or 0.7
+	local function piece(name: string, s: Vector3, offset: CFrame, color: Color3, material: Enum.Material?)
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Size = s
+		p.Color = color
+		p.Material = material or Enum.Material.SmoothPlastic
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.Massless = true
+		p.CastShadow = false
+		p.TopSurface = Enum.SurfaceType.Smooth
+		p.BottomSurface = Enum.SurfaceType.Smooth
+		p.CFrame = foot.CFrame * offset
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = foot
+		weld.Part1 = p
+		weld.Parent = p
+		p.Parent = model
+		return p
+	end
+	local bottom = -size.Y / 2
+	piece("Upper", Vector3.new(size.X + 0.12, height, size.Z + 0.14), CFrame.new(0, bottom + height / 2 - 0.02, 0.02), def.Color, def.Material)
+	piece("Sole", Vector3.new(size.X + 0.18, 0.2, size.Z + 0.3), CFrame.new(0, bottom + 0.06, -0.04), def.Trim or Color3.fromRGB(245, 245, 245))
+	piece("Toe", Vector3.new(size.X + 0.14, height * 0.45, 0.25), CFrame.new(0, bottom + height * 0.25, -(size.Z / 2 + 0.12)), def.Trim or def.Color:Lerp(Color3.new(1, 1, 1), 0.4))
+	if def.Trail then
+		local attachment = Instance.new("Attachment")
+		attachment.Position = Vector3.new(0, bottom, 0.3)
+		attachment.Parent = foot
+		local sparkle = Instance.new("ParticleEmitter")
+		sparkle.Name = "BootTrail"
+		sparkle.Color = ColorSequence.new(def.Trim or def.Color)
+		sparkle.LightEmission = 0.8
+		sparkle.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 0) })
+		sparkle.Lifetime = NumberRange.new(0.3, 0.6)
+		sparkle.Speed = NumberRange.new(0.5, 1.5)
+		sparkle.Rate = 12
+		sparkle.Parent = attachment
+		attachment.Name = "BeeBootTrail"
+	end
+	return model
+end
+
+function ShopService:GiveBoots(player: Player)
+	local data = S.DataService:Get(player)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if not data or not humanoid then
+		return
+	end
+	local def = Config.BootsById[data.Boots] or Config.Boots[1]
+	humanoid.WalkSpeed = Config.BaseWalkSpeed * def.Speed
+	for _, child in character:GetDescendants() do
+		if child.Name == "BeeBoot" or child.Name == "BeeBootTrail" then
+			child:Destroy()
+		end
+	end
+	if def.Tier <= 1 then
+		return -- flip-flops are just the default feet
+	end
+	local r15 = humanoid.RigType == Enum.HumanoidRigType.R15
+	for _, name in r15 and { "LeftFoot", "RightFoot" } or { "Left Leg", "Right Leg" } do
+		local foot = character:FindFirstChild(name)
+		if foot then
+			buildShoe(foot, def, r15).Parent = character
+		end
+	end
+end
+
 function ShopService:RefreshVisuals(player: Player)
 	self:GiveTool(player)
 	self:GiveBackpack(player)
+	self:GiveBoots(player)
 end
 
 -- Purchases -------------------------------------------------------------------------------------
@@ -191,6 +273,8 @@ function ShopService:_equip(player: Player, category: string, id: string)
 	S.DataService:MarkDirty(player, info.Equipped)
 	if category == "Collector" then
 		self:GiveTool(player)
+	elseif category == "Boots" then
+		self:GiveBoots(player)
 	else
 		-- a smaller bag cannot hold more than its capacity
 		local capacity = Config.BackpackById[id].Capacity

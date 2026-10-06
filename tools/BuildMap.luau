@@ -52,8 +52,13 @@ local PATHS = {
 }
 local PATH_WIDTH = 9
 local POND = Vector3.new(-130, 0, 60)
-local PAVING = Color3.fromRGB(228, 210, 172)
-local CURB = Color3.fromRGB(150, 140, 128)
+local PAVING = Color3.fromRGB(206, 186, 150)
+local CURB = Color3.fromRGB(128, 118, 106)
+-- Walkway layering: every surface kind has its own height so overlapping slabs never z-fight
+local LAYER = {
+	Curb = 0.10, JointRim = 0.13, HiveRowRim = 0.06, HiveRow = 0.18, Path = 0.22, PathAlt = 0.20,
+	JointTop = 0.26, PlazaRim = 0.16, Plaza = 0.31, PadRim = 0.19, Pad = 0.35,
+}
 
 -- Helpers ------------------------------------------------------------------------------------
 
@@ -160,8 +165,8 @@ local function buildLighting()
 	end)
 	Lighting.ClockTime = 15.2
 	Lighting.GeographicLatitude = 28
-	Lighting.Brightness = 3
-	Lighting.ExposureCompensation = 0.1
+	Lighting.Brightness = 2.4
+	Lighting.ExposureCompensation = -0.05
 	Lighting.EnvironmentDiffuseScale = 1
 	Lighting.EnvironmentSpecularScale = 0.5
 	Lighting.ShadowSoftness = 0.55
@@ -180,9 +185,9 @@ local function buildLighting()
 	atmosphere.Haze = 1.5
 
 	local bloom = effect("BloomEffect")
-	bloom.Intensity = 0.5
-	bloom.Size = 26
-	bloom.Threshold = 1.25
+	bloom.Intensity = 0.35
+	bloom.Size = 24
+	bloom.Threshold = 1.6
 
 	local rays = effect("SunRaysEffect")
 	rays.Intensity = 0.09
@@ -327,36 +332,42 @@ end
 
 local function buildWalkways(walk: Instance)
 	-- plaza with a raised stone rim
-	disc(walk, "PlazaRim", SPAWN, 27.5, 0.14, CURB, Enum.Material.Slate)
-	disc(walk, "Plaza", SPAWN, 26, 0.17, PAVING)
-	for _, seg in PATHS do
+	disc(walk, "PlazaRim", SPAWN, 27.5, LAYER.PlazaRim, CURB, Enum.Material.Slate)
+	disc(walk, "Plaza", SPAWN, 26, LAYER.Plaza, PAVING)
+	local joints = {}
+	for i, seg in PATHS do
 		local a, b = seg[1], seg[2]
 		local flat = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
 		local mid = (a + b) / 2
 		local cf = CFrame.lookAt(Vector3.new(mid.X, 0, mid.Z), Vector3.new(b.X, 0, b.Z))
 		local length = flat.Magnitude
-		slab(walk, "Path", cf * CFrame.new(0, -0.05, 0), Vector3.new(PATH_WIDTH, 0.4, length), PAVING)
+		-- neighbouring segments alternate heights so their overlap near a joint cannot z-fight
+		local top = i % 2 == 0 and LAYER.PathAlt or LAYER.Path
+		slab(walk, "Path", cf * CFrame.new(0, top - 0.2, 0), Vector3.new(PATH_WIDTH, 0.4, length), PAVING)
 		for _, side in { -1, 1 } do
-			slab(walk, "Curb", cf * CFrame.new(side * (PATH_WIDTH / 2 + 0.45), -0.03, 0), Vector3.new(0.9, 0.42, length), CURB, Enum.Material.Slate)
+			slab(walk, "Curb", cf * CFrame.new(side * (PATH_WIDTH / 2 + 0.45), LAYER.Curb - 0.2, 0), Vector3.new(0.9, 0.4, length), CURB, Enum.Material.Slate)
 		end
-		-- round joints so corners stay smooth
 		for _, point in { a, b } do
-			disc(walk, "Joint", point, PATH_WIDTH / 2 + 0.9, 0.165, CURB, Enum.Material.Slate)
-			disc(walk, "JointTop", point, PATH_WIDTH / 2, 0.168, PAVING)
+			joints[math.floor(point.X) .. "," .. math.floor(point.Z)] = point
 		end
+	end
+	-- one round joint per distinct point keeps corners smooth
+	for _, point in joints do
+		disc(walk, "JointRim", point, PATH_WIDTH / 2 + 0.9, LAYER.JointRim, CURB, Enum.Material.Slate)
+		disc(walk, "JointTop", point, PATH_WIDTH / 2, LAYER.JointTop, PAVING)
 	end
 	-- hive row terrace
 	local width = Config.Hive.Count * 50 + 30
-	slab(walk, "HiveRowRim", CFrame.new(0, -0.07, -88), Vector3.new(width + 2, 0.4, 32), CURB, Enum.Material.Slate)
-	slab(walk, "HiveRow", CFrame.new(0, -0.03, -88), Vector3.new(width, 0.4, 30), PAVING)
+	slab(walk, "HiveRowRim", CFrame.new(0, LAYER.HiveRowRim - 0.2, -88), Vector3.new(width + 2, 0.4, 32), CURB, Enum.Material.Slate)
+	slab(walk, "HiveRow", CFrame.new(0, LAYER.HiveRow - 0.2, -88), Vector3.new(width, 0.4, 30), PAVING)
 	-- nest and stand pads
 	for _, nest in Config.Nests do
-		disc(walk, "NestRim", nest.Position, 13, 0.15, CURB, Enum.Material.Slate)
-		disc(walk, "NestPad", nest.Position, 12, 0.18, PAVING)
+		disc(walk, "NestRim", nest.Position, 13, LAYER.PadRim, CURB, Enum.Material.Slate)
+		disc(walk, "NestPad", nest.Position, 12, LAYER.Pad, PAVING)
 	end
 	for _, pos in { Vector3.new(-56, 0, 28), Vector3.new(56, 0, 28), Vector3.new(-80, 0, -36), Vector3.new(80, 0, -36), Vector3.new(-100, 0, 14), Vector3.new(100, 0, 14) } do
-		disc(walk, "StandRim", pos, 10, 0.15, CURB, Enum.Material.Slate)
-		disc(walk, "StandPad", pos, 9, 0.18, PAVING)
+		disc(walk, "StandRim", pos, 10, LAYER.PadRim, CURB, Enum.Material.Slate)
+		disc(walk, "StandPad", pos, 9, LAYER.Pad, PAVING)
 	end
 	for _, p in walk:GetDescendants() do
 		if p:IsA("BasePart") then
@@ -645,17 +656,30 @@ local function buildHive(index: number, hivesFolder)
 		end
 	end
 
+	-- claim / make-honey ring: a flat hexagon decal lying on the terrace in front of the wooden
+	-- floor (the old cylinder clipped into the floor boards)
 	local pad = part({
 		Name = "Pad",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(0.4, 10, 10),
-		CFrame = CFrame.new(x, 0.25, z + 12) * CFrame.Angles(0, 0, math.pi / 2),
-		Color = HONEY,
-		Material = Enum.Material.SmoothPlastic,
-		Transparency = 0.55,
+		Size = Vector3.new(10, 0.05, 10),
+		CFrame = CFrame.new(x, LAYER.HiveRow + 0.03, z + 16),
+		Transparency = 1,
 		CanCollide = false,
+		CanQuery = false,
 		Parent = model,
 	})
+	local ring = Instance.new("Decal")
+	ring.Name = "Ring"
+	ring.Face = Enum.NormalId.Top
+	ring.Texture = Assets.Icons.HexRing
+	ring.Color3 = Color3.fromRGB(255, 200, 60)
+	ring.Parent = pad
+	local glow = Instance.new("Decal")
+	glow.Name = "Glow"
+	glow.Face = Enum.NormalId.Top
+	glow.Texture = Assets.Icons.Glow
+	glow.Color3 = Color3.fromRGB(255, 210, 90)
+	glow.Transparency = 0.55
+	glow.Parent = pad
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Make Honey"
 	prompt.ObjectText = "Hive " .. index
@@ -672,7 +696,7 @@ local function buildHive(index: number, hivesFolder)
 	sparkle.Speed = NumberRange.new(1, 2.5)
 	sparkle.SpreadAngle = Vector2.new(15, 15)
 	sparkle.Rate = 4
-	sparkle.EmissionDirection = Enum.NormalId.Right
+	sparkle.EmissionDirection = Enum.NormalId.Top
 	sparkle.Parent = pad
 
 	local sign = part({ Name = "Sign", Size = Vector3.new(1, 1, 1), CFrame = CFrame.new(x, centerY + (hiveMesh and 24 or 19), z), Transparency = 1, CanCollide = false, Parent = model })
@@ -797,16 +821,21 @@ local function buildBoard(name: string, title: string, position: Vector3, boards
 	model.Name = name
 	model.Parent = boardsFolder
 	local facing = CFrame.lookAt(position, Vector3.new(SPAWN.X, position.Y, SPAWN.Z))
-	local screen = part({ Name = "Screen", Size = Vector3.new(16, 14, 0.4), CFrame = facing * CFrame.new(0, 10, 0), Color = Color3.fromRGB(60, 200, 255), Material = Enum.Material.Glass, Transparency = 0.35, CanCollide = false, Parent = model })
+	-- dark backing + glass front + neon frame, each on its own depth so nothing z-fights;
+	-- two posts hold the board instead of a block poking through the glass
+	local screen = part({ Name = "Screen", Size = Vector3.new(16, 14, 0.2), CFrame = facing * CFrame.new(0, 11, 0), Color = Color3.fromRGB(70, 210, 255), Material = Enum.Material.Glass, Transparency = 0.55, CanCollide = false, Parent = model })
+	part({ Name = "Backing", Size = Vector3.new(15.8, 13.8, 0.3), CFrame = screen.CFrame * CFrame.new(0, 0, 0.45), Color = Color3.fromRGB(16, 30, 52), Material = Enum.Material.SmoothPlastic, Parent = model })
 	for _, data in {
-		{ CFrame.new(0, 7.3, 0), Vector3.new(17, 0.6, 0.6) },
-		{ CFrame.new(0, -7.3, 0), Vector3.new(17, 0.6, 0.6) },
-		{ CFrame.new(8.3, 0, 0), Vector3.new(0.6, 15.2, 0.6) },
-		{ CFrame.new(-8.3, 0, 0), Vector3.new(0.6, 15.2, 0.6) },
+		{ CFrame.new(0, 7.3, -0.15), Vector3.new(17.2, 0.6, 0.5) },
+		{ CFrame.new(0, -7.3, -0.15), Vector3.new(17.2, 0.6, 0.5) },
+		{ CFrame.new(8.3, 0, -0.17), Vector3.new(0.6, 14, 0.5) },
+		{ CFrame.new(-8.3, 0, -0.17), Vector3.new(0.6, 14, 0.5) },
 	} do
-		part({ Name = "Edge", Size = data[2], CFrame = screen.CFrame * data[1], Color = Color3.fromRGB(90, 230, 255), Material = Enum.Material.Neon, Parent = model })
+		part({ Name = "Edge", Size = data[2], CFrame = screen.CFrame * data[1], Color = Color3.fromRGB(90, 230, 255), Material = Enum.Material.Neon, CastShadow = false, Parent = model })
 	end
-	part({ Name = "Stand", Size = Vector3.new(2, 3, 2), CFrame = facing * CFrame.new(0, 1.5, 0), Color = Color3.fromRGB(40, 50, 70), Material = Enum.Material.Metal, Parent = model })
+	for _, sx in { -5, 5 } do
+		part({ Name = "Post", Size = Vector3.new(0.8, 3.6, 0.8), CFrame = facing * CFrame.new(sx, 1.8, 0.45), Color = Color3.fromRGB(40, 50, 70), Material = Enum.Material.Metal, Parent = model })
+	end
 	local gui = Instance.new("SurfaceGui")
 	gui.Name = "Board"
 	gui.Face = Enum.NormalId.Front

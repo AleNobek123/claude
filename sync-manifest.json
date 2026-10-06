@@ -49,6 +49,15 @@
    "path": [
     "ReplicatedStorage",
     "Shared",
+    "EconomicScaling"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/EconomicScaling.luau"
+  },
+  {
+   "path": [
+    "ReplicatedStorage",
+    "Shared",
     "Format"
    ],
    "class": "ModuleScript",
@@ -148,6 +157,16 @@
    ],
    "class": "ModuleScript",
    "file": "src/server/Services/EventService.luau"
+  },
+  {
+   "path": [
+    "ServerScriptService",
+    "Server",
+    "Services",
+    "FeedbackService"
+   ],
+   "class": "ModuleScript",
+   "file": "src/server/Services/FeedbackService.luau"
   },
   {
    "path": [
@@ -300,6 +319,17 @@
     "StarterPlayerScripts",
     "Client",
     "Controllers",
+    "Feedback"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Feedback.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
     "FieldRenderer"
    ],
    "class": "ModuleScript",
@@ -410,6 +440,17 @@
     "StarterPlayerScripts",
     "Client",
     "Controllers",
+    "NotificationBadge"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/NotificationBadge.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
     "NotificationCenter"
    ],
    "class": "ModuleScript",
@@ -425,6 +466,17 @@
    ],
    "class": "ModuleScript",
    "file": "src/client/Controllers/Promo.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Rewards"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Rewards.luau"
   },
   {
    "path": [
