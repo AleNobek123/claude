@@ -51,6 +51,8 @@ local function prep(part: BasePart, role: string, rel: CFrame): BasePart
 	p.CanTouch = false
 	p.CastShadow = false
 	p.Massless = true
+	-- the importer pivots every mesh on its Blender object origin (far away and axis-converted)
+	p.PivotOffset = CFrame.new()
 	p.CFrame = rel
 	p:SetAttribute("Role", role)
 	return p
