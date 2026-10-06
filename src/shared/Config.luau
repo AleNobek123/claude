@@ -447,9 +447,9 @@ Config.Gamepasses = {
 }
 Config.GamepassOrder = { "ExtraSlots", "VIPField", "AutoConvert" }
 
--- Infinite honey multiplier ladder ("x2 Honey Forever"): every purchase doubles honey again.
--- Each step is a developer product (create one per price on the Creator Dashboard); after the
--- last step the last product repeats forever, so the ladder never ends.
+-- Honey multiplier ladder ("x2 Honey Forever"): every purchase doubles honey again, up to x1024.
+-- Each step is a developer product (create one per price on the Creator Dashboard); steps with
+-- the same price may share one product.
 Config.HoneyLadder = {
 	Name = "Honey Forever",
 	Base = 2, -- multiplier = Base ^ tier
