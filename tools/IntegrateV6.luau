@@ -163,7 +163,7 @@ return function()
 		end
 		jar.PrimaryPart = jar:FindFirstChild("Main")
 		jar:SetAttribute("Yaw", math.pi) -- straps were modelled on +Z; they must face the torso
-		jar:SetAttribute("Hug", 0.18)
+		jar:SetAttribute("Hug", 0.02) -- the strap plate is the front face: rest it on the back
 		local crystal = jar:Clone()
 		crystal.Name = "CrystalJar"
 		paint(jar, JAR)
