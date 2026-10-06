@@ -238,6 +238,11 @@ function BeeRenderer:ApplyTasks(records)
 	end
 end
 
+-- Read-only view of every hive roster (HiveDisplay docks a copy of each bee in its cell)
+function BeeRenderer:Swarms()
+	return swarms
+end
+
 function BeeRenderer:GetBeePosition(hiveIndex: number, slot: number): Vector3?
 	local swarm = swarms[hiveIndex]
 	local bee = swarm and swarm.Bees[slot]

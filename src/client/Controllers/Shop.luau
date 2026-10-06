@@ -88,7 +88,8 @@ function Shop:_render()
 	local equipped = isCollector and data.Collector or data.Backpack
 	for i, item in items do
 		local frame, preview = card(i, item.Name)
-		local model = Viewport.Clone(isCollector and "Collectors" or "Backpacks", item.Shape)
+		local kind = isCollector and "Collectors" or "Backpacks"
+		local model = Viewport.Clone(kind, item.Id) or Viewport.Clone(kind, item.Shape)
 		if model then
 			Viewport.Model(preview, tinted(model, item.Color), { Mode = "spin", Zoom = 0.95, Pitch = 18 })
 		end

@@ -520,68 +520,11 @@ function UI:Toggle(name: string, ...)
 	end
 end
 
--- Toasts: small glass pills sliding in from the right ----------------------------------------------
-
-local TOAST_ICONS = { info = "Bee", good = "Check", bad = "Close", rare = "Star" }
-local TOAST_TINT = {
-	info = Color3.fromRGB(255, 255, 255),
-	good = Color3.fromRGB(225, 255, 225),
-	bad = Color3.fromRGB(255, 225, 220),
-	rare = Color3.fromRGB(255, 238, 170),
-}
-
+-- Messages go to the NotificationCenter (top-center, borderless); set in its Start
 function UI:Toast(text: string, kind: string?)
-	kind = kind or "info"
-	local screen = self:_screen()
-	local holder = screen:FindFirstChild("Toasts")
-	if not holder then
-		holder = UI.Create("Frame", {
-			Name = "Toasts",
-			AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.new(1, -16, 0, 90),
-			Size = UDim2.fromOffset(340, 420),
-			BackgroundTransparency = 1,
-			Parent = screen,
-		}, { UI.List(8, false, Enum.HorizontalAlignment.Right) })
-		holder.UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+	if UI.Notify then
+		UI.Notify(text, kind)
 	end
-	local toast = UI.Create("Frame", {
-		Size = UDim2.fromOffset(330, 52),
-		BackgroundColor3 = TOAST_TINT[kind] or TOAST_TINT.info,
-		BackgroundTransparency = 0.12,
-		Parent = holder,
-	}, { UI.Round() })
-	UI.Icon(TOAST_ICONS[kind] or "Bee", { Position = UDim2.fromOffset(10, 8), Size = UDim2.fromOffset(36, 36), Parent = toast })
-	UI.Label({
-		Text = text,
-		Font = UI.Body,
-		Position = UDim2.fromOffset(54, 6),
-		Size = UDim2.new(1, -66, 1, -12),
-		TextXAlignment = Enum.TextXAlignment.Left,
-		MaxTextSize = 15,
-		Parent = toast,
-	})
-	Juice.Pop(toast)
-	local frames = {}
-	for _, child in holder:GetChildren() do
-		if child:IsA("Frame") then
-			table.insert(frames, child)
-		end
-	end
-	if #frames > 4 then
-		frames[1]:Destroy()
-	end
-	task.delay(kind == "rare" and 6 or 4, function()
-		if toast.Parent then
-			local scale = toast:FindFirstChild("JuiceScale")
-			if scale then
-				local tween = TweenService:Create(scale, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Scale = 0 })
-				tween:Play()
-				tween.Completed:Wait()
-			end
-			toast:Destroy()
-		end
-	end)
 end
 
 function UI:Init()

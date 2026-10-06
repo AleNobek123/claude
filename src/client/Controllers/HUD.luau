@@ -1,16 +1,19 @@
 --[[
 	HUD
-	Icon-first heads-up display:
-	  top-left    honey / bees / eggs pills (animated counters)
-	  left        sidebar: Home (teleport), Hive, Shop, Eggs, Codex, Store, Settings
-	  bottom      pollen bar with backpack icon, boost chips
-	  bottom-right Make Honey button near your hive
+	Borderless, colour-rich heads-up display:
+	  top-left      honey / bees / eggs: big outlined numbers next to their icons (no boxes)
+	  left          compact menu grid of saturated tiles: Home, Hive, Shop, Eggs, Codex, Store, Settings
+	  bottom        pollen bar with backpack icon, boost chips
+	  bottom-right  glossy MAKE HONEY button near your hive
+	The default Roblox hotbar is disabled: the collector is always equipped.
 ]]
 
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
@@ -19,6 +22,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
 local Format = require(Shared.Format)
 local Net = require(Shared.Net)
+local ShopJuicer = require(script.Parent.ShopJuicer)
 
 local player = Players.LocalPlayer
 
@@ -29,15 +33,18 @@ local UI
 local Juice
 local shownHoney = 0
 
-local SIDEBAR = {
-	{ Name = "Home", Icon = "Home", Tooltip = "Teleport to hive" },
-	{ Name = "Hive", Icon = "Honeycomb", Tooltip = "My hive" },
-	{ Name = "Shop", Icon = "Shop", Tooltip = "Shop" },
-	{ Name = "Eggs", Icon = "Egg", Tooltip = "Eggs & odds" },
-	{ Name = "Codex", Icon = "Book", Tooltip = "Bee album" },
-	{ Name = "Store", Icon = "Gift", Tooltip = "Store" },
-	{ Name = "Settings", Icon = "Gear", Tooltip = "Settings & codes" },
+local MENU = {
+	{ Name = "Home", Icon = "Home", Tooltip = "Teleport to hive", Color = Color3.fromRGB(64, 170, 255) },
+	{ Name = "Hive", Icon = "Honeycomb", Tooltip = "My hive", Color = Color3.fromRGB(150, 92, 255) },
+	{ Name = "Shop", Icon = "Shop", Tooltip = "Shop", Color = Color3.fromRGB(255, 140, 36) },
+	{ Name = "Eggs", Icon = "Egg", Tooltip = "Eggs & odds", Color = Color3.fromRGB(255, 84, 160) },
+	{ Name = "Codex", Icon = "Book", Tooltip = "Bee album", Color = Color3.fromRGB(255, 196, 30) },
+	{ Name = "Store", Icon = "Gift", Tooltip = "Robux store", Color = Color3.fromRGB(240, 58, 72) },
+	{ Name = "Settings", Icon = "Gear", Tooltip = "Settings & codes", Color = Color3.fromRGB(38, 180, 160) },
 }
+local TILE = 64
+local GAP = 10
+local STATS_HEIGHT = 64 + 52 + 52 + 2 * 6
 
 function HUD:Init(controllers)
 	C = controllers
@@ -45,83 +52,163 @@ function HUD:Init(controllers)
 	Juice = UI.Juice
 end
 
-local function pill(parent: Instance, order: number, iconName: string)
-	local frame = UI.Glass({
-		Name = iconName .. "Pill",
+-- Outlined number next to an icon; no background at all
+local function stat(parent: Instance, order: number, iconName: string, big: boolean?)
+	local height = big and 64 or 52
+	local row = UI.Create("Frame", {
+		Name = iconName .. "Stat",
 		LayoutOrder = order,
-		Size = UDim2.fromOffset(200, 50),
-		Transparency = 0.15,
-		Radius = 25,
+		Size = UDim2.fromOffset(260, height),
+		BackgroundTransparency = 1,
 		Parent = parent,
 	})
-	frame.UICorner.CornerRadius = UDim.new(1, 0)
+	local iconSize = big and 62 or 50
+	UI.Icon(iconName, {
+		Name = "IconShadow",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0, iconSize / 2 + 2, 0.5, 3),
+		Size = UDim2.fromOffset(iconSize, iconSize),
+		ImageColor3 = Color3.new(0, 0, 0),
+		ImageTransparency = 0.7,
+		Parent = row,
+	})
 	local icon = UI.Icon(iconName, {
 		Name = "Icon",
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromOffset(22, 25),
-		Size = UDim2.fromOffset(54, 54),
-		ZIndex = 3,
-		Parent = frame,
+		Position = UDim2.new(0, iconSize / 2, 0.5, 0),
+		Size = UDim2.fromOffset(iconSize, iconSize),
+		ZIndex = 2,
+		Parent = row,
 	})
-	local label = UI.Label({
+	local label = UI.Create("TextLabel", {
 		Name = "Value",
-		Text = "0",
-		Position = UDim2.fromOffset(54, 6),
-		Size = UDim2.new(1, -66, 1, -12),
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(iconSize + 10, 0),
+		Size = UDim2.new(1, -iconSize - 10, 1, 0),
+		Font = UI.Font,
+		TextSize = big and 40 or 32,
+		TextColor3 = Color3.new(1, 1, 1),
 		TextXAlignment = Enum.TextXAlignment.Left,
-		TextColor3 = UI.Colors.Text,
-		MaxTextSize = 28,
-		Parent = frame,
+		Text = "0",
+		ZIndex = 2,
+		Parent = row,
 	})
-	return frame, label, icon
+	UI.Create("UIStroke", { Color = Color3.fromRGB(84, 46, 12), Thickness = big and 3.5 or 3, Parent = label })
+	UI.Create("UIGradient", {
+		Rotation = 90,
+		Color = big and ColorSequence.new(Color3.fromRGB(255, 252, 220), Color3.fromRGB(255, 196, 46)) or ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(255, 232, 190)),
+		Parent = label,
+	})
+	return row, label, icon
+end
+
+-- Saturated rounded tile with a glossy top highlight; text only on hover
+local function tile(parent: Instance, order: number, item, onClick)
+	local button = UI.Create("ImageButton", {
+		Name = item.Name,
+		LayoutOrder = order,
+		AutoButtonColor = false,
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		Image = "",
+		Parent = parent,
+	}, { UI.Corner(18), UI.Gradient(item.Color:Lerp(Color3.new(1, 1, 1), 0.22), item.Color:Lerp(Color3.new(0, 0, 0), 0.12)) })
+	UI.Create("Frame", {
+		Name = "Gloss",
+		Position = UDim2.fromScale(0.08, 0.05),
+		Size = UDim2.fromScale(0.84, 0.42),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundTransparency = 0.78,
+		BorderSizePixel = 0,
+		Parent = button,
+	}, { UI.Corner(14) })
+	UI.Icon(item.Icon, {
+		Name = "IconShadow",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 2, 0.5, 4),
+		Size = UDim2.fromScale(0.7, 0.7),
+		ImageColor3 = Color3.new(0, 0, 0),
+		ImageTransparency = 0.65,
+		Parent = button,
+	})
+	UI.Icon(item.Icon, {
+		Name = "Icon",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromScale(0.7, 0.7),
+		Parent = button,
+	})
+	local tip = UI.Create("TextLabel", {
+		Name = "Tooltip",
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(1, 12, 0.5, 0),
+		Size = UDim2.fromOffset(0, 30),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
+		Font = UI.Font,
+		TextSize = 22,
+		TextColor3 = Color3.new(1, 1, 1),
+		Text = item.Tooltip,
+		Visible = false,
+		ZIndex = 30,
+		Parent = button,
+	}, { UI.Create("UIStroke", { Color = item.Color:Lerp(Color3.new(0, 0, 0), 0.55), Thickness = 3 }) })
+	button.MouseEnter:Connect(function()
+		tip.Visible = true
+		tip.TextTransparency = 1
+		TweenService:Create(tip, TweenInfo.new(0.15), { TextTransparency = 0 }):Play()
+	end)
+	button.MouseLeave:Connect(function()
+		tip.Visible = false
+	end)
+	Juice.Bind(button, { Rotate = 4 })
+	button.Activated:Connect(onClick)
+	return button
 end
 
 function HUD:_build()
 	local screen = UI:_screen()
 
-	-- stat pills
+	-- stats
 	local stats = UI.Create("Frame", {
 		Name = "Stats",
-		Position = UDim2.fromOffset(18, 14),
-		Size = UDim2.fromOffset(220, 170),
+		Position = UDim2.fromOffset(18, 10),
+		Size = UDim2.fromOffset(260, STATS_HEIGHT),
 		BackgroundTransparency = 1,
 		Parent = screen,
-	}, { UI.List(10), UI.Create("UIScale", { Name = "Responsive" }) })
-	self.Stats = stats
+	}, { UI.List(6), UI.Create("UIScale", { Name = "Responsive" }) })
 	stats.UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	self.HoneyPill, self.HoneyLabel, self.HoneyIcon = pill(stats, 1, "Honey")
-	self.BeePill, self.BeeLabel = pill(stats, 2, "Bee")
-	self.EggPill, self.EggLabel = pill(stats, 3, "Egg")
+	self.Stats = stats
+	self.HoneyStat, self.HoneyLabel, self.HoneyIcon = stat(stats, 1, "Honey", true)
+	self.BeeStat, self.BeeLabel = stat(stats, 2, "Bee")
+	self.EggStat, self.EggLabel = stat(stats, 3, "Egg")
 	Juice.Float(self.HoneyIcon, 2, 2.4)
 
-	-- sidebar
-	local sidebar = UI.Create("Frame", {
-		Name = "Sidebar",
+	-- menu grid
+	local menu = UI.Create("Frame", {
+		Name = "Menu",
 		Position = UDim2.fromOffset(18, 200),
-		Size = UDim2.fromOffset(64, #SIDEBAR * 72),
+		Size = UDim2.fromOffset(2 * TILE + GAP, 4 * (TILE + GAP)),
 		BackgroundTransparency = 1,
 		Parent = screen,
-	}, { UI.List(8), UI.Create("UIScale", { Name = "Responsive" }) })
-	sidebar.UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Top
-	pcall(function()
-		sidebar.UIListLayout.Wraps = true
-	end)
-	self.Sidebar = sidebar
-	for i, item in SIDEBAR do
-		local button = UI.IconButton(item.Icon, 64, {
-			Name = item.Name,
-			LayoutOrder = i,
-			Tooltip = item.Tooltip,
-			BackgroundTransparency = 0.1,
-			Parent = sidebar,
-		}, function()
+	}, {
+		UI.Create("UIGridLayout", {
+			CellSize = UDim2.fromOffset(TILE, TILE),
+			CellPadding = UDim2.fromOffset(GAP, GAP),
+			FillDirection = Enum.FillDirection.Horizontal,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+		UI.Create("UIScale", { Name = "Responsive" }),
+	})
+	self.Menu = menu
+	for i, item in MENU do
+		local button = tile(menu, i, item, function()
 			if item.Name == "Home" then
 				self:TeleportHome()
 			else
 				UI:Toggle(item.Name)
 			end
 		end)
-		Juice.Pop(button, i * 0.05)
+		Juice.Pop(button, i * 0.04)
 	end
 
 	-- pollen bar
@@ -142,6 +229,7 @@ function HUD:_build()
 		Parent = barHolder,
 	})
 	bar.Name = "Bar"
+	text.Name = "Text"
 	self.PollenFill = fill
 	self.PollenText = text
 	self.BackpackIcon = UI.Icon("Backpack", {
@@ -151,8 +239,6 @@ function HUD:_build()
 		ZIndex = 4,
 		Parent = barHolder,
 	})
-	-- keep the old path working for tools/tests
-	text.Name = "Text"
 
 	-- boost chips
 	self.Boosts = UI.Create("Frame", {
@@ -164,24 +250,106 @@ function HUD:_build()
 		Parent = screen,
 	}, { UI.List(8, true, Enum.HorizontalAlignment.Center) })
 
-	-- make honey
-	self.ConvertButton = UI.Button({
-		Name = "MakeHoney",
-		Text = "MAKE HONEY",
-		Icon = "Honey",
-		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -24, 1, -84),
-		Size = UDim2.fromOffset(230, 66),
-		MaxTextSize = 26,
-		Visible = false,
-		Parent = screen,
-	}, function()
-		Net.Event("ToggleConvert"):FireServer(not player:GetAttribute("Converting"))
-	end)
+	self:_buildConvertButton(screen)
 end
 
--- Fit the HUD to the viewport: scale clusters down on small screens, wrap the sidebar into
--- columns, and keep the bottom-left (thumbstick) and bottom-right (jump) clear on touch devices.
+-- Glossy honey button: soft shadow + glow behind, light sweep across, outlined label
+function HUD:_buildConvertButton(screen: Instance)
+	local holder = UI.Create("Frame", {
+		Name = "MakeHoney",
+		AnchorPoint = Vector2.new(1, 1),
+		Position = UDim2.new(1, -24, 1, -84),
+		Size = UDim2.fromOffset(240, 70),
+		BackgroundTransparency = 1,
+		Visible = false,
+		Parent = screen,
+	}, { UI.Create("UIScale", { Name = "Responsive" }) })
+	local glow = UI.Create("ImageLabel", {
+		Name = "Glow",
+		BackgroundTransparency = 1,
+		Image = UI.Icons.Glow,
+		ImageColor3 = Color3.fromRGB(255, 190, 40),
+		ImageTransparency = 0.5,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(1.5, 0, 2.4, 0),
+		Parent = holder,
+	})
+	UI.Create("ImageLabel", {
+		Name = "Shadow",
+		BackgroundTransparency = 1,
+		Image = UI.Icons.Shadow,
+		ImageColor3 = Color3.fromRGB(90, 40, 0),
+		ImageTransparency = 0.45,
+		ScaleType = Enum.ScaleType.Slice,
+		SliceCenter = Rect.new(80, 80, 176, 176),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 6),
+		Size = UDim2.new(1, 30, 1, 30),
+		Parent = holder,
+	})
+	local button = UI.Create("TextButton", {
+		Name = "Button",
+		AutoButtonColor = false,
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		Text = "",
+		Parent = holder,
+	}, { UI.Round() })
+	-- the gradient would tint the button's own text, so the label is a separate child
+	local gradient = UI.Create("UIGradient", { Rotation = 90, Parent = button })
+	UI.Create("Frame", {
+		Name = "Gloss",
+		Position = UDim2.new(0, 14, 0, 6),
+		Size = UDim2.new(1, -28, 0.38, 0),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		BackgroundTransparency = 0.72,
+		BorderSizePixel = 0,
+		Parent = button,
+	}, { UI.Round() })
+	local label = UI.Create("TextLabel", {
+		Name = "Label",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(58, 0),
+		Size = UDim2.new(1, -66, 1, 0),
+		Font = UI.Font,
+		TextSize = 30,
+		TextColor3 = Color3.new(1, 1, 1),
+		Text = "MAKE HONEY",
+		ZIndex = 3,
+		Parent = button,
+	})
+	local outline = UI.Create("UIStroke", { Thickness = 3, Parent = label })
+	local icon = UI.Icon("Honey", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0, 30, 0.5, -2),
+		Size = UDim2.fromOffset(62, 62),
+		ZIndex = 3,
+		Parent = button,
+	})
+	ShopJuicer.Shine(button, { Period = 0.8, Pause = 1.8, Transparency = 0.1 })
+	Juice.Bind(button)
+	button.Activated:Connect(function()
+		Net.Event("ToggleConvert"):FireServer(not player:GetAttribute("Converting"))
+	end)
+	local function paint(on: boolean)
+		local top = on and Color3.fromRGB(255, 120, 110) or Color3.fromRGB(255, 214, 70)
+		local bottom = on and Color3.fromRGB(220, 50, 50) or Color3.fromRGB(255, 130, 20)
+		gradient.Color = ColorSequence.new(top, bottom)
+		outline.Color = on and Color3.fromRGB(110, 16, 16) or Color3.fromRGB(130, 60, 0)
+		glow.ImageColor3 = on and Color3.fromRGB(255, 90, 80) or Color3.fromRGB(255, 190, 40)
+		label.Text = on and "STOP" or "MAKE HONEY"
+	end
+	paint(false)
+	self.ConvertHolder = holder
+	self.ConvertButton = button
+	self.ConvertGlow = glow
+	self.ConvertIcon = icon
+	self._paintConvert = paint
+end
+
+-- Fit the HUD to the viewport: scale clusters down on small screens, widen the menu grid when
+-- it would run too low, keep the bottom-left (thumbstick) and bottom-right (jump) clear on touch.
 function HUD:_layout()
 	local viewport = Workspace.CurrentCamera.ViewportSize
 	local inset = GuiService:GetGuiInset()
@@ -189,17 +357,20 @@ function HUD:_layout()
 	local touch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 	local scale = math.clamp(math.min(height / 760, viewport.X / 1200), 0.55, 1)
 	self.Stats.Responsive.Scale = scale
-	self.Sidebar.Responsive.Scale = scale
-	local top = 14 + 170 * scale + 14
-	self.Sidebar.Position = UDim2.fromOffset(18, top)
+	self.Menu.Responsive.Scale = scale
+	self.ConvertHolder.Responsive.Scale = scale
+	local top = 10 + STATS_HEIGHT * scale + 16
+	self.Menu.Position = UDim2.fromOffset(18, top)
 	local bottom = touch and height * 0.62 or height - 16
-	local perColumn = math.max(1, math.floor(((bottom - top) / scale + 8) / 72))
-	local columns = math.ceil(#SIDEBAR / perColumn)
-	self.Sidebar.Size = UDim2.fromOffset(columns * 72 - 8, math.min(#SIDEBAR, perColumn) * 72)
+	local columns = 2
+	while columns < #MENU and top + math.ceil(#MENU / columns) * (TILE + GAP) * scale > bottom do
+		columns += 1
+	end
+	local rows = math.ceil(#MENU / columns)
+	self.Menu.Size = UDim2.fromOffset(columns * (TILE + GAP) - GAP, rows * (TILE + GAP))
 	self.PollenBar.Position = UDim2.new(0.5, 0, 1, touch and -24 or -86)
 	self.Boosts.Position = UDim2.new(0.5, 0, 1, touch and -72 or -134)
-	self.ConvertButton.Position = UDim2.new(1, -24, 1, touch and -150 - 60 * scale or -84)
-	self.ConvertButton.Size = UDim2.fromOffset(230 * scale, 66 * scale)
+	self.ConvertHolder.Position = UDim2.new(1, -24, 1, touch and -150 - 60 * scale or -84)
 end
 
 function HUD:_refresh(data)
@@ -210,7 +381,7 @@ function HUD:_refresh(data)
 	if math.floor(honey) ~= math.floor(shownHoney) then
 		Juice.CountUp(self.HoneyLabel, shownHoney, honey, formatter, 0.5)
 		if honey > shownHoney then
-			Juice.Punch(self.HoneyPill, 0.08)
+			Juice.Punch(self.HoneyLabel, 0.12)
 			Juice.Punch(self.HoneyIcon, 0.25)
 		end
 		shownHoney = honey
@@ -226,6 +397,7 @@ function HUD:_refresh(data)
 		gradient.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.3), color)
 	end
 	self.PollenText.Text = `{Format.Short(pollen)} / {Format.Short(capacity)}`
+	self._full = ratio >= 1
 	if ratio >= 1 and not self._fullPulsed then
 		self._fullPulsed = true
 		Juice.Shake(self.BackpackIcon, 5, 0.4)
@@ -243,7 +415,7 @@ function HUD:_refresh(data)
 	self.EggLabel.Text = tostring(eggs)
 end
 
--- Fast camera swoop + teleport to the player's hive pad
+-- Honey-drip transition; the jump happens while the centre of the screen is covered
 function HUD:TeleportHome()
 	local index = player:GetAttribute("HiveIndex")
 	local map = Workspace:FindFirstChild("Map")
@@ -256,31 +428,13 @@ function HUD:TeleportHome()
 	end
 	self._teleporting = true
 	local camera = Workspace.CurrentCamera
-	local flash = UI.Create("Frame", {
-		Size = UDim2.fromScale(1, 1),
-		BackgroundColor3 = Color3.fromRGB(255, 240, 200),
-		BackgroundTransparency = 1,
-		ZIndex = 100,
-		Parent = UI:_screen(),
-	})
-	C.Sound:Play("Whoosh")
-	camera.CameraType = Enum.CameraType.Scriptable
-	local lift = CFrame.lookAt(root.Position + Vector3.new(0, 45, 25), root.Position)
-	TweenService:Create(camera, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { CFrame = lift }):Play()
-	TweenService:Create(flash, TweenInfo.new(0.35), { BackgroundTransparency = 0 }):Play()
-	task.wait(0.37)
-	local frame = hive:FindFirstChild("Frame")
-	local spot = pad.Position + Vector3.new(0, 4, 0)
-	local lookAt = frame and Vector3.new(frame.Position.X, spot.Y, frame.Position.Z) or spot + Vector3.new(0, 0, -1)
-	character:PivotTo(CFrame.lookAt(spot, lookAt))
-	local behind = CFrame.lookAt(spot + (spot - lookAt).Unit * 14 + Vector3.new(0, 6, 0), spot)
-	camera.CFrame = CFrame.lookAt(spot + Vector3.new(0, 45, 25), spot)
-	TweenService:Create(flash, TweenInfo.new(0.4), { BackgroundTransparency = 1 }):Play()
-	local down = TweenService:Create(camera, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { CFrame = behind })
-	down:Play()
-	down.Completed:Wait()
-	camera.CameraType = Enum.CameraType.Custom
-	flash:Destroy()
+	C.TeleportTransition:Play(function()
+		local frame = hive:FindFirstChild("Frame")
+		local spot = pad.Position + Vector3.new(0, 4, 0)
+		local lookAt = frame and Vector3.new(frame.Position.X, spot.Y, frame.Position.Z) or spot + Vector3.new(0, 0, -1)
+		character:PivotTo(CFrame.lookAt(spot, lookAt))
+		camera.CFrame = CFrame.lookAt(spot + (spot - lookAt).Unit * 14 + Vector3.new(0, 6, 0), spot)
+	end)
 	self._teleporting = false
 end
 
@@ -301,26 +455,52 @@ function HUD:_boostChips()
 			local chip = UI.Create("Frame", {
 				Size = UDim2.fromOffset(0, 30),
 				AutomaticSize = Enum.AutomaticSize.X,
-				BackgroundColor3 = UI.Colors.Ink,
-				BackgroundTransparency = 0.35,
+				BackgroundTransparency = 1,
 				Parent = self.Boosts,
-			}, { UI.Round(), UI.Create("UIPadding", { PaddingLeft = UDim.new(0, 34), PaddingRight = UDim.new(0, 12) }) })
-			UI.Icon("Lightning", { Position = UDim2.fromOffset(-30, 2), Size = UDim2.fromOffset(26, 26), Parent = chip })
+			}, { UI.Create("UIPadding", { PaddingLeft = UDim.new(0, 34), PaddingRight = UDim.new(0, 6) }) })
+			UI.Icon("Lightning", { Position = UDim2.fromOffset(-32, 1), Size = UDim2.fromOffset(28, 28), Parent = chip })
 			UI.Create("TextLabel", {
 				Size = UDim2.fromOffset(0, 30),
 				AutomaticSize = Enum.AutomaticSize.X,
 				BackgroundTransparency = 1,
-				Font = UI.Body,
-				TextSize = 15,
-				TextColor3 = UI.Colors.White,
+				Font = UI.Font,
+				TextSize = 20,
+				TextColor3 = Color3.fromRGB(255, 236, 140),
 				Text = `2x {def and def.Name or fieldId}  {Format.Time(expiry - now)}`,
 				Parent = chip,
-			})
+			}, { UI.Create("UIStroke", { Color = Color3.fromRGB(90, 46, 6), Thickness = 2.5 }) })
+		end
+	end
+end
+
+-- The default hotbar is replaced by the always-equipped collector
+local function disableHotbar()
+	for _ = 1, 20 do
+		local ok = pcall(StarterGui.SetCoreGuiEnabled, StarterGui, Enum.CoreGuiType.Backpack, false)
+		if ok then
+			return
+		end
+		task.wait(0.5)
+	end
+end
+
+local function keepCollectorEquipped()
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local backpack = player:FindFirstChildOfClass("Backpack")
+	if not humanoid or humanoid.Health <= 0 or not backpack or character:FindFirstChildWhichIsA("Tool") then
+		return
+	end
+	for _, tool in backpack:GetChildren() do
+		if tool:IsA("Tool") and tool:GetAttribute("CollectorId") then
+			humanoid:EquipTool(tool)
+			return
 		end
 	end
 end
 
 function HUD:Start()
+	task.spawn(disableHotbar)
 	self:_build()
 	self:_layout()
 	Workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
@@ -332,8 +512,7 @@ function HUD:Start()
 	end)
 
 	Net.Event("Notify").OnClientEvent:Connect(function(text, kind)
-		UI:Toast(text, kind)
-		C.Sound:Play(kind == "rare" and "Event" or "Notify", { Volume = kind == "bad" and 0.6 or 1 })
+		C.NotificationCenter:Push(text, kind)
 	end)
 
 	-- shop stands and other world objects carry an OpenPanel attribute on their prompt
@@ -348,10 +527,18 @@ function HUD:Start()
 	end)
 
 	player:GetAttributeChangedSignal("Converting"):Connect(function()
-		local on = player:GetAttribute("Converting")
-		self.ConvertButton.Text = on and "STOP" or "MAKE HONEY"
-		UI.SetButtonColor(self.ConvertButton, on and UI.Colors.Bad or UI.Colors.Honey)
+		self._paintConvert(player:GetAttribute("Converting") == true)
 		Juice.Punch(self.ConvertButton, 0.12)
+	end)
+
+	-- full backpack: the honey button breathes so it is impossible to miss
+	RunService.RenderStepped:Connect(function()
+		if self.ConvertHolder.Visible then
+			local t = os.clock()
+			local strength = self._full and 0.25 or 0.08
+			self.ConvertGlow.ImageTransparency = 0.5 - math.sin(t * (self._full and 6 or 2.5)) * strength
+			self.ConvertIcon.Rotation = math.sin(t * 3) * (self._full and 10 or 4)
+		end
 	end)
 
 	task.spawn(function()
@@ -364,12 +551,13 @@ function HUD:Start()
 			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 			local near = pad and root and (root.Position - pad.Position).Magnitude <= Config.Convert.Range
 			local show = near == true or player:GetAttribute("Converting") == true
-			if show and not self.ConvertButton.Visible then
-				self.ConvertButton.Visible = true
+			if show and not self.ConvertHolder.Visible then
+				self.ConvertHolder.Visible = true
 				Juice.Pop(self.ConvertButton)
 			elseif not show then
-				self.ConvertButton.Visible = false
+				self.ConvertHolder.Visible = false
 			end
+			keepCollectorEquipped()
 		end
 	end)
 	task.spawn(function()

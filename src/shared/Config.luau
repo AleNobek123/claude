@@ -45,8 +45,8 @@ Config.Fields = {
 		BeesRequired = 0,
 		Multiplier = 1,
 		Flowers = { "White" },
-		Center = Vector3.new(0, 0, 120),
-		Tiles = 16,
+		Center = Vector3.new(0, 0, 150),
+		Tiles = 25,
 		Ground = Color3.fromRGB(124, 186, 82),
 	},
 	{
@@ -55,8 +55,8 @@ Config.Fields = {
 		BeesRequired = 5,
 		Multiplier = 1.5,
 		Flowers = { "White", "Blue", "Red" },
-		Center = Vector3.new(-150, 14, 140),
-		Tiles = 16,
+		Center = Vector3.new(-200, 14, 170),
+		Tiles = 25,
 		Ground = Color3.fromRGB(98, 170, 92),
 	},
 	{
@@ -65,8 +65,8 @@ Config.Fields = {
 		BeesRequired = 10,
 		Multiplier = 2.5,
 		Flowers = { "Red" },
-		Center = Vector3.new(150, 14, 140),
-		Tiles = 16,
+		Center = Vector3.new(205, 14, 180),
+		Tiles = 25,
 		Ground = Color3.fromRGB(136, 160, 74),
 	},
 	{
@@ -75,8 +75,8 @@ Config.Fields = {
 		BeesRequired = 15,
 		Multiplier = 4,
 		Flowers = { "Blue" },
-		Center = Vector3.new(-150, 30, 300),
-		Tiles = 16,
+		Center = Vector3.new(-220, 30, 390),
+		Tiles = 25,
 		Ground = Color3.fromRGB(82, 150, 110),
 	},
 	{
@@ -85,8 +85,8 @@ Config.Fields = {
 		BeesRequired = 25,
 		Multiplier = 8,
 		Flowers = { "White", "Blue", "Red" },
-		Center = Vector3.new(150, 40, 310),
-		Tiles = 16,
+		Center = Vector3.new(210, 42, 410),
+		Tiles = 25,
 		Ground = Color3.fromRGB(120, 150, 170),
 	},
 	{
@@ -95,8 +95,8 @@ Config.Fields = {
 		BeesRequired = 0,
 		Multiplier = 6,
 		Flowers = { "White" },
-		Center = Vector3.new(0, 22, 300),
-		Tiles = 12,
+		Center = Vector3.new(0, 22, 405),
+		Tiles = 19,
 		Ground = Color3.fromRGB(170, 150, 80),
 		VIP = true,
 	},
@@ -263,10 +263,12 @@ Config.Codes = {
 	LAUNCH = { Eggs = { Silver = 1 } },
 }
 
+-- Objectives are picked live from the player's state (see Tutorial controller); the saved step
+-- only records milestones: 3 = first honey made, 5 = first egg hatched (tutorial done).
 Config.Tutorial = {
-	{ Id = "Field", Text = "Fly to Sunflower Meadow" },
+	{ Id = "Field", Text = "Follow the arrows to Sunflower Meadow" },
 	{ Id = "Collect", Text = "Hold click to collect pollen" },
-	{ Id = "Convert", Text = "Return to your hive and make honey" },
+	{ Id = "Convert", Text = "Backpack full! Make honey at your hive" },
 	{ Id = "Hatch", Text = "Hatch an egg at the Golden Nest" },
 }
 
@@ -300,6 +302,31 @@ Config.Gamepasses = {
 	AutoConvert = { Id = 0, Robux = 399, Name = "Auto-Convert Companion", Description = "Converts pollen remotely when your bag is full." },
 }
 Config.GamepassOrder = { "ExtraSlots", "VIPField", "AutoConvert" }
+
+-- Infinite honey multiplier ladder ("x2 Honey Forever"): every purchase doubles honey again.
+-- Each step is a developer product (create one per price on the Creator Dashboard); after the
+-- last step the last product repeats forever, so the ladder never ends.
+Config.HoneyLadder = {
+	Name = "Honey Forever",
+	Base = 2, -- multiplier = Base ^ tier
+	Steps = {
+		{ Id = 0, Robux = 99 },
+		{ Id = 0, Robux = 249 },
+		{ Id = 0, Robux = 499 },
+		{ Id = 0, Robux = 999 },
+		{ Id = 0, Robux = 1999 },
+	},
+}
+
+function Config.HoneyMultiplier(tier: number?): number
+	return Config.HoneyLadder.Base ^ (tier or 0)
+end
+
+-- The product that buys the next tier for a player currently at `tier`
+function Config.HoneyLadderStep(tier: number?)
+	local steps = Config.HoneyLadder.Steps
+	return steps[math.min((tier or 0) + 1, #steps)]
+end
 
 -- In Studio, products with Id = 0 are granted instantly so every flow can be tested.
 Config.StudioFreePurchases = true

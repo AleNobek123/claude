@@ -1,7 +1,9 @@
 --[[
-	BuildMap v2 (Studio edit-time tool, not shipped with the game)
+	BuildMap v3 (Studio edit-time tool, not shipped with the game)
 	Builds a tiered, terrain-based world:
-	  - smooth terrain ground, rolling outer hills, a pond, sandy paths and a stone plaza
+	  - LeafyGrass terrain (no grass blades clipping through paths), rolling outer hills, a pond
+	  - part-built walkways with crisp curbs: plaza, roads, hive row, nest and stand pads
+	  - golden bee fountain in the middle of the plaza (the spawn itself is invisible)
 	  - fields on plateaus: Sunflower (ground), Clover / Rose (tier 1), Bluebell / Royal (tier 2),
 	    Crystal (tier 3), each reached by a ramp guarded by a natural stone gate
 	  - 8 hives, physical Golden Nests, shop stands, holographic leaderboards
@@ -30,12 +32,28 @@ local Terrain = Workspace.Terrain
 
 -- Plateaus: field id -> plateau (a ramp climbs from RampFrom to the plateau edge)
 local PLATEAUS = {
-	Clover = { Size = 110, RampFrom = Vector3.new(-58, 0, 140), Edge = Vector3.new(-95, 14, 140) },
-	Rose = { Size = 110, RampFrom = Vector3.new(58, 0, 140), Edge = Vector3.new(95, 14, 140) },
-	Bluebell = { Size = 110, RampFrom = Vector3.new(-150, 14, 193), Edge = Vector3.new(-150, 30, 245) },
-	Crystal = { Size = 110, RampFrom = Vector3.new(150, 14, 193), Edge = Vector3.new(150, 40, 255) },
-	Royal = { Size = 92, RampFrom = Vector3.new(0, 0, 196), Edge = Vector3.new(0, 22, 254) },
+	Clover = { Size = 140, RampFrom = Vector3.new(-86, 0, 170), Edge = Vector3.new(-130, 14, 170) },
+	Rose = { Size = 140, RampFrom = Vector3.new(91, 0, 180), Edge = Vector3.new(135, 14, 180) },
+	Bluebell = { Size = 140, RampFrom = Vector3.new(-215, 14, 240), Edge = Vector3.new(-215, 30, 320) },
+	Crystal = { Size = 140, RampFrom = Vector3.new(210, 14, 250), Edge = Vector3.new(210, 42, 340) },
+	Royal = { Size = 116, RampFrom = Vector3.new(0, 0, 265), Edge = Vector3.new(0, 22, 347) },
 }
+
+-- Walkways (part-built, so their edges stay perfectly straight)
+local PATHS = {
+	{ Vector3.new(0, 0, 24), Vector3.new(0, 0, 98) }, -- plaza -> meadow
+	{ Vector3.new(0, 0, -24), Vector3.new(0, 0, -74) }, -- plaza -> hive row
+	{ Vector3.new(-18, 0, 18), Vector3.new(-75, 0, 62) }, -- plaza -> Clover ramp
+	{ Vector3.new(-75, 0, 62), Vector3.new(-86, 0, 170) },
+	{ Vector3.new(18, 0, 18), Vector3.new(80, 0, 62) }, -- plaza -> Rose ramp
+	{ Vector3.new(80, 0, 62), Vector3.new(91, 0, 180) },
+	{ Vector3.new(0, 0, 202), Vector3.new(0, 0, 265) }, -- meadow -> Royal ramp
+	{ Vector3.new(-44, 0, -32), Vector3.new(44, 0, -32) }, -- nest row
+}
+local PATH_WIDTH = 9
+local POND = Vector3.new(-130, 0, 60)
+local PAVING = Color3.fromRGB(228, 210, 172)
+local CURB = Color3.fromRGB(150, 140, 128)
 
 -- Helpers ------------------------------------------------------------------------------------
 
@@ -227,8 +245,10 @@ local function ramp(from: Vector3, to: Vector3, width: number, material: Enum.Ma
 		local t = i / steps
 		local p = from + dir * (length * t)
 		local h = rise * t
-		if h > 1 then
-			fillBlock(CFrame.new(p.X, from.Y + h / 2 - 3, p.Z), Vector3.new(width, h, 4), Enum.Material.Rock)
+		-- solid embankment from the ground up to just under the slope (no floating bridges)
+		local top = from.Y + h - 3
+		if top > -3 then
+			fillBlock(CFrame.new(p.X, (top - 4) / 2, p.Z), Vector3.new(width, top + 4, 4), Enum.Material.Rock)
 		end
 	end
 	fillBlock(cf, Vector3.new(width, 6, slabLength), material)
@@ -237,35 +257,35 @@ end
 local function plateau(center: Vector3, size: number, top: number)
 	fillBlock(CFrame.new(center.X, top / 2 - 6, center.Z), Vector3.new(size, top + 12, size), Enum.Material.Rock)
 	fillBlock(CFrame.new(center.X, top * 0.35, center.Z), Vector3.new(size + 2, math.max(4, top * 0.3), size + 2), Enum.Material.Slate)
-	fillBlock(CFrame.new(center.X, top - 2, center.Z), Vector3.new(size - 2, 4, size - 2), Enum.Material.Grass)
+	fillBlock(CFrame.new(center.X, top - 2, center.Z), Vector3.new(size - 2, 4, size - 2), Enum.Material.LeafyGrass)
 end
 
 local function buildTerrain()
 	Terrain:Clear()
+	Terrain:SetMaterialColor(Enum.Material.LeafyGrass, Color3.fromRGB(116, 190, 82))
 	Terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(116, 190, 82))
 	Terrain:SetMaterialColor(Enum.Material.Rock, Color3.fromRGB(150, 140, 128))
 	Terrain:SetMaterialColor(Enum.Material.Slate, Color3.fromRGB(132, 124, 116))
 	Terrain:SetMaterialColor(Enum.Material.Ground, Color3.fromRGB(200, 164, 112))
 	Terrain:SetMaterialColor(Enum.Material.Sand, Color3.fromRGB(236, 214, 160))
-	Terrain:SetMaterialColor(Enum.Material.Pavement, Color3.fromRGB(232, 214, 176))
 	Terrain.WaterColor = Color3.fromRGB(80, 190, 220)
 	Terrain.WaterTransparency = 0.6
 	Terrain.WaterWaveSize = 0.08
 	Terrain.WaterReflectance = 0.3
 
-	-- ground (top surface at y = 0)
-	fillBlock(CFrame.new(0, -10, 130), Vector3.new(820, 20, 820), Enum.Material.Grass)
-	-- rolling outer hills and rocky outcrops
+	-- ground (top surface at y = 0). LeafyGrass has no animated blades, so nothing clips paths.
+	fillBlock(CFrame.new(0, -10, 160), Vector3.new(1200, 20, 1200), Enum.Material.LeafyGrass)
+	-- rolling outer hills and rocky outcrops around the playable area
 	local rng = Random.new(7)
-	for i = 1, 46 do
-		local angle = (i / 46) * math.pi * 2 + rng:NextNumber(-0.05, 0.05)
-		local r = rng:NextNumber(330, 390)
-		fillBall(Vector3.new(math.cos(angle) * r, rng:NextNumber(-20, -6), 130 + math.sin(angle) * r), rng:NextNumber(34, 62), Enum.Material.Grass)
+	for i = 1, 60 do
+		local angle = (i / 60) * math.pi * 2 + rng:NextNumber(-0.04, 0.04)
+		local r = rng:NextNumber(470, 540)
+		fillBall(Vector3.new(math.cos(angle) * r, rng:NextNumber(-22, -6), 180 + math.sin(angle) * r), rng:NextNumber(40, 72), Enum.Material.LeafyGrass)
 	end
-	for _ = 1, 14 do
+	for _ = 1, 18 do
 		local angle = rng:NextNumber(0, math.pi * 2)
-		local r = rng:NextNumber(300, 360)
-		fillBall(Vector3.new(math.cos(angle) * r, rng:NextNumber(10, 30), 130 + math.sin(angle) * r), rng:NextNumber(14, 26), Enum.Material.Rock)
+		local r = rng:NextNumber(430, 500)
+		fillBall(Vector3.new(math.cos(angle) * r, rng:NextNumber(10, 30), 180 + math.sin(angle) * r), rng:NextNumber(16, 30), Enum.Material.Rock)
 	end
 	-- plateaus, then ramps (ramps last so they cut cleanly into the cliffs)
 	for fieldId, info in PLATEAUS do
@@ -275,39 +295,138 @@ local function buildTerrain()
 	for _, info in PLATEAUS do
 		ramp(info.RampFrom, info.Edge, 22, Enum.Material.Ground)
 	end
-	-- spawn plaza and paths
-	fillCylinder(CFrame.new(0, -1, 0), 2.2, 26, Enum.Material.Pavement)
-	local paths = {
-		{ Vector3.new(0, 0, 18), Vector3.new(0, 0, 86) }, -- spawn -> meadow
-		{ Vector3.new(0, 0, -18), Vector3.new(0, 0, -78) }, -- spawn -> hives
-		{ Vector3.new(-215, 0, -78), Vector3.new(215, 0, -78) }, -- hive walk
-		{ Vector3.new(-22, 0, 22), Vector3.new(-58, 0, 140) }, -- to Clover ramp
-		{ Vector3.new(22, 0, 22), Vector3.new(58, 0, 140) }, -- to Rose ramp
-		{ Vector3.new(0, 0, 152), Vector3.new(0, 0, 198) }, -- meadow -> Royal ramp
-		{ Vector3.new(-44, 0, -32), Vector3.new(44, 0, -32) }, -- nest row
-	}
-	for _, seg in paths do
-		local a, b = seg[1], seg[2]
-		local mid = (a + b) / 2
-		local len = (b - a).Magnitude
-		fillBlock(CFrame.lookAt(Vector3.new(mid.X, -1, mid.Z), Vector3.new(b.X, -1, b.Z)), Vector3.new(11, 2, len + 6), Enum.Material.Ground)
-	end
-	-- decoration-free beds (grass blades would poke through flowers, pads and nests)
+	-- soil beds under the flower fields
 	for _, def in Config.Fields do
-		local size = def.Tiles * Config.Tiles.Size + 4
+		local size = def.Tiles * Config.Tiles.Size + 6
 		fillBlock(CFrame.new(def.Center.X, def.Center.Y - 1, def.Center.Z), Vector3.new(size, 2, size), Enum.Material.Ground)
 	end
-	fillBlock(CFrame.new(0, -1, -88), Vector3.new(Config.Hive.Count * 50 + 20, 2, 30), Enum.Material.Pavement)
+	-- pond with a sandy rim
+	fillCylinder(CFrame.new(POND.X, -0.9, POND.Z), 1.8, 22, Enum.Material.Sand)
+	fillCylinder(CFrame.new(POND.X, -1, POND.Z), 6, 18, Enum.Material.Air)
+	fillCylinder(CFrame.new(POND.X, -3.4, POND.Z), 2.4, 18, Enum.Material.Water)
+end
+
+-- Walkways --------------------------------------------------------------------------------------------------
+-- Parts instead of terrain: perfectly straight edges with a stone curb, slightly above the grass.
+
+local function slab(parent: Instance, name: string, cf: CFrame, size: Vector3, color: Color3, material: Enum.Material?)
+	return part({ Name = name, Size = size, CFrame = cf, Color = color, Material = material or Enum.Material.Pavement, Parent = parent })
+end
+
+local function disc(parent: Instance, name: string, center: Vector3, radius: number, top: number, color: Color3, material: Enum.Material?)
+	return part({
+		Name = name,
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(0.4, radius * 2, radius * 2),
+		CFrame = CFrame.new(center.X, top - 0.2, center.Z) * CFrame.Angles(0, 0, math.pi / 2),
+		Color = color,
+		Material = material or Enum.Material.Pavement,
+		Parent = parent,
+	})
+end
+
+local function buildWalkways(walk: Instance)
+	-- plaza with a raised stone rim
+	disc(walk, "PlazaRim", SPAWN, 27.5, 0.14, CURB, Enum.Material.Slate)
+	disc(walk, "Plaza", SPAWN, 26, 0.17, PAVING)
+	for _, seg in PATHS do
+		local a, b = seg[1], seg[2]
+		local flat = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
+		local mid = (a + b) / 2
+		local cf = CFrame.lookAt(Vector3.new(mid.X, 0, mid.Z), Vector3.new(b.X, 0, b.Z))
+		local length = flat.Magnitude
+		slab(walk, "Path", cf * CFrame.new(0, -0.05, 0), Vector3.new(PATH_WIDTH, 0.4, length), PAVING)
+		for _, side in { -1, 1 } do
+			slab(walk, "Curb", cf * CFrame.new(side * (PATH_WIDTH / 2 + 0.45), -0.03, 0), Vector3.new(0.9, 0.42, length), CURB, Enum.Material.Slate)
+		end
+		-- round joints so corners stay smooth
+		for _, point in { a, b } do
+			disc(walk, "Joint", point, PATH_WIDTH / 2 + 0.9, 0.165, CURB, Enum.Material.Slate)
+			disc(walk, "JointTop", point, PATH_WIDTH / 2, 0.168, PAVING)
+		end
+	end
+	-- hive row terrace
+	local width = Config.Hive.Count * 50 + 30
+	slab(walk, "HiveRowRim", CFrame.new(0, -0.07, -88), Vector3.new(width + 2, 0.4, 32), CURB, Enum.Material.Slate)
+	slab(walk, "HiveRow", CFrame.new(0, -0.03, -88), Vector3.new(width, 0.4, 30), PAVING)
+	-- nest and stand pads
 	for _, nest in Config.Nests do
-		fillCylinder(CFrame.new(nest.Position.X, -1, nest.Position.Z), 2, 12, Enum.Material.Pavement)
+		disc(walk, "NestRim", nest.Position, 13, 0.15, CURB, Enum.Material.Slate)
+		disc(walk, "NestPad", nest.Position, 12, 0.18, PAVING)
 	end
 	for _, pos in { Vector3.new(-56, 0, 28), Vector3.new(56, 0, 28), Vector3.new(-80, 0, -36), Vector3.new(80, 0, -36), Vector3.new(-100, 0, 14), Vector3.new(100, 0, 14) } do
-		fillCylinder(CFrame.new(pos.X, -1, pos.Z), 2, 10, Enum.Material.Pavement)
+		disc(walk, "StandRim", pos, 10, 0.15, CURB, Enum.Material.Slate)
+		disc(walk, "StandPad", pos, 9, 0.18, PAVING)
 	end
-	-- pond with a sandy rim
-	fillCylinder(CFrame.new(-82, -0.9, 40), 1.8, 20, Enum.Material.Sand)
-	fillCylinder(CFrame.new(-82, -1, 40), 6, 16, Enum.Material.Air)
-	fillCylinder(CFrame.new(-82, -3.4, 40), 2.4, 16, Enum.Material.Water)
+	for _, p in walk:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.CastShadow = false
+		end
+	end
+end
+
+-- Golden bee fountain: the plaza's centrepiece (replaces the old yellow spawn block)
+local function buildCenterpiece(map: Instance)
+	local model = Instance.new("Model")
+	model.Name = "BeeFountain"
+	model.Parent = map
+	local stone = Color3.fromRGB(236, 226, 206)
+	local dark = Color3.fromRGB(196, 182, 160)
+	disc(model, "Base", SPAWN, 8, 1.2, dark, Enum.Material.Limestone)
+	disc(model, "Basin", SPAWN, 7, 2.6, stone, Enum.Material.Limestone)
+	local pool = disc(model, "Honey", SPAWN, 6, 2.75, Color3.fromRGB(255, 180, 30), Enum.Material.Glass)
+	pool.Transparency = 0.15
+	pool.CanCollide = false
+	part({ Name = "Column", Shape = Enum.PartType.Cylinder, Size = Vector3.new(5, 2.2, 2.2), CFrame = CFrame.new(0, 5, 0) * CFrame.Angles(0, 0, math.pi / 2), Color = stone, Material = Enum.Material.Limestone, Parent = model })
+	part({ Name = "Cap", Shape = Enum.PartType.Cylinder, Size = Vector3.new(0.8, 4.4, 4.4), CFrame = CFrame.new(0, 7.8, 0) * CFrame.Angles(0, 0, math.pi / 2), Color = Color3.fromRGB(255, 200, 60), Material = Enum.Material.Foil, Parent = model })
+	-- golden bee statue on top
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local beeTemplate = assets and assets:FindFirstChild("Bees") and assets.Bees:FindFirstChild("Bee")
+	if beeTemplate then
+		local bee = beeTemplate:Clone()
+		bee.Name = "GoldenBee"
+		local _, size = bee:GetBoundingBox()
+		bee:ScaleTo(bee:GetScale() * (7 / math.max(size.X, size.Y, size.Z)))
+		for _, p in bee:GetDescendants() do
+			if p:IsA("BasePart") then
+				p.Anchored = true
+				p.CanCollide = false
+				local r = p:GetAttribute("Role") or p.Name
+				if r == "Eye" or r == "Eyes" then
+					p.Color = Color3.fromRGB(40, 26, 10)
+				elseif r == "WingL" or r == "WingR" then
+					p.Color = Color3.fromRGB(255, 250, 230)
+					p.Material = Enum.Material.Glass
+					p.Transparency = 0.3
+				else
+					p.Color = (r == "Stripe" or r == "Stripes") and Color3.fromRGB(120, 70, 20) or Color3.fromRGB(255, 196, 46)
+					p.Material = Enum.Material.Foil
+				end
+			end
+		end
+		local _, s2 = bee:GetBoundingBox()
+		bee:PivotTo(CFrame.new(0, 8.2 + s2.Y / 2, 0) * CFrame.Angles(0, math.pi, 0))
+		bee:SetAttribute("Spin", true)
+		bee.Parent = model
+	end
+	-- honey drips from the cap into the pool
+	local emitterPart = part({ Name = "Drips", Size = Vector3.new(4, 0.2, 4), CFrame = CFrame.new(0, 7.4, 0), Transparency = 1, CanCollide = false, CanQuery = false, Parent = model })
+	local drips = Instance.new("ParticleEmitter")
+	drips.Color = ColorSequence.new(Color3.fromRGB(255, 190, 40))
+	drips.LightEmission = 0.3
+	drips.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0.15) })
+	drips.Lifetime = NumberRange.new(0.6, 0.9)
+	drips.Speed = NumberRange.new(0, 0.5)
+	drips.Acceleration = Vector3.new(0, -14, 0)
+	drips.Rate = 12
+	drips.Shape = Enum.ParticleEmitterShape.Box
+	drips.EmissionDirection = Enum.NormalId.Bottom
+	drips.Parent = emitterPart
+	local light = Instance.new("PointLight")
+	light.Color = Color3.fromRGB(255, 200, 90)
+	light.Range = 20
+	light.Brightness = 1
+	light.Parent = emitterPart
 end
 
 -- Fields --------------------------------------------------------------------------------------------------
@@ -738,10 +857,16 @@ local function blocked(pos: Vector3): boolean
 			return true -- ramps
 		end
 	end
-	if math.abs(pos.X) < 10 and pos.Z > 0 and pos.Z < 200 then
-		return true -- main path
+	for _, seg in PATHS do
+		local a, b = seg[1], seg[2]
+		local ab = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
+		local ap = Vector3.new(pos.X - a.X, 0, pos.Z - a.Z)
+		local t = math.clamp(ap:Dot(ab) / ab:Dot(ab), 0, 1)
+		if (ap - ab * t).Magnitude < PATH_WIDTH then
+			return true -- walkways
+		end
 	end
-	if (Vector3.new(pos.X, 0, pos.Z) - Vector3.new(-82, 0, 40)).Magnitude < 22 then
+	if (Vector3.new(pos.X, 0, pos.Z) - POND).Magnitude < 26 then
 		return true -- pond
 	end
 	return false
@@ -767,13 +892,13 @@ end
 
 local function buildDecor(decor: Instance)
 	local rng = Random.new(42)
-	local area = { -300, 300, -170, 420 }
-	scatter(decor, "Tree", 34, 0.8, 1.3, rng, area)
-	scatter(decor, "Pine", 30, 0.9, 1.6, rng, area)
-	scatter(decor, "Bush", 60, 0.7, 1.4, rng, area)
-	scatter(decor, "Rock_A", 26, 0.8, 2.2, rng, area)
-	scatter(decor, "Rock_B", 26, 0.8, 1.8, rng, area)
-	scatter(decor, "Mushroom", 30, 0.8, 1.6, rng, area)
+	local area = { -390, 390, -210, 560 }
+	scatter(decor, "Tree", 56, 0.8, 1.4, rng, area)
+	scatter(decor, "Pine", 50, 0.9, 1.7, rng, area)
+	scatter(decor, "Bush", 95, 0.7, 1.4, rng, area)
+	scatter(decor, "Rock_A", 40, 0.8, 2.2, rng, area)
+	scatter(decor, "Rock_B", 40, 0.8, 1.8, rng, area)
+	scatter(decor, "Mushroom", 48, 0.8, 1.6, rng, area)
 	-- big boulders at cliff feet
 	for fieldId, info in PLATEAUS do
 		local def = Config.FieldById[fieldId]
@@ -790,9 +915,9 @@ local function buildDecor(decor: Instance)
 		end
 	end
 	-- fences and lanterns along the main path
-	for z = 24, 80, 9 do
+	for z = 30, 92, 9 do
 		for _, side in { -1, 1 } do
-			place("Fence", CFrame.new(side * 9, 0, z) * CFrame.Angles(0, math.pi / 2, 0), 1, decor)
+			place("Fence", CFrame.new(side * 7.5, 0, z) * CFrame.Angles(0, math.pi / 2, 0), 1, decor)
 		end
 	end
 	for _, spot in {
@@ -840,13 +965,17 @@ return function(options)
 		end
 		buildTerrain()
 	end
+	-- the spawn is invisible now (it used to be a bare yellow block in the middle of the plaza);
+	-- players appear on the plaza facing the meadow, in front of the bee fountain
 	local spawn = Workspace:FindFirstChildOfClass("SpawnLocation")
 	if spawn then
-		spawn.CFrame = CFrame.new(SPAWN + Vector3.new(0, 0.6, 0))
-		spawn.Size = Vector3.new(10, 1, 10)
-		spawn.Color = HONEY
-		spawn.Material = Enum.Material.SmoothPlastic
-		spawn.Transparency = 0.2
+		local at = SPAWN + Vector3.new(0, 0.4, 16)
+		spawn.CFrame = CFrame.lookAt(at, at + Vector3.new(0, 0, 1))
+		spawn.Size = Vector3.new(8, 0.4, 8)
+		spawn.Transparency = 1
+		spawn.CanCollide = false
+		spawn.CanQuery = false
+		spawn.CastShadow = false
 		spawn.Neutral = true
 		for _, child in spawn:GetChildren() do
 			if child:IsA("Decal") then
@@ -862,6 +991,8 @@ return function(options)
 		local map = Instance.new("Folder")
 		map.Name = "Map"
 		map.Parent = Workspace
+		buildWalkways(folder("Walkways", map))
+		buildCenterpiece(map)
 		local fields = folder("Fields", map)
 		local gates = folder("Gates", map)
 		for _, def in Config.Fields do
@@ -883,5 +1014,5 @@ return function(options)
 		buildBoard("SwarmBoard", "Rarest Swarm Score", Vector3.new(100, 0, 14), boards)
 		buildDecor(folder("Decor", map))
 	end
-	return "Map v2 built"
+	return "Map v3 built"
 end

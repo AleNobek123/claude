@@ -355,6 +355,17 @@
     "StarterPlayerScripts",
     "Client",
     "Controllers",
+    "HiveDisplay"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/HiveDisplay.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
     "HoneyFx"
    ],
    "class": "ModuleScript",
@@ -399,6 +410,28 @@
     "StarterPlayerScripts",
     "Client",
     "Controllers",
+    "NotificationCenter"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/NotificationCenter.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "Promo"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/Promo.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
     "Settings"
    ],
    "class": "ModuleScript",
@@ -414,6 +447,17 @@
    ],
    "class": "ModuleScript",
    "file": "src/client/Controllers/Shop.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "ShopJuicer"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/ShopJuicer.luau"
   },
   {
    "path": [
@@ -447,6 +491,17 @@
    ],
    "class": "ModuleScript",
    "file": "src/client/Controllers/Store.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "TeleportTransition"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/TeleportTransition.luau"
   },
   {
    "path": [

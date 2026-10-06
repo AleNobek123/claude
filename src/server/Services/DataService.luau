@@ -60,6 +60,7 @@ DataService.Template = {
 	Tutorial = { Done = false, Starter = false, Step = 1 },
 	Settings = { Music = true, Sfx = true, Graphics = "High" },
 	Codes = {}, -- [CODE] = true
+	HoneyTier = 0, -- Honey Forever ladder: honey x Config.HoneyMultiplier(tier)
 }
 
 type Profile = {

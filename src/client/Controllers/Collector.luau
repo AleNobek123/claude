@@ -85,6 +85,8 @@ function Collector:_harvestFx(center: Vector3, radius: number)
 	if not renderer or not head then
 		return
 	end
+	-- single-mesh tools have no Head part: aim at the top of the handle instead
+	local target = head.Name == "Head" and head.Position or head.CFrame:PointToWorldSpace(Vector3.new(0, head.Size.Y * 0.4, 0))
 	local low = C.Settings and C.Settings:Low()
 	local flowers = renderer:FlowersNear(center, radius + 2, low and 4 or 10)
 	for i, flower in flowers do
@@ -101,7 +103,7 @@ function Collector:_harvestFx(center: Vector3, radius: number)
 			petal.Parent = Workspace
 			local spin = CFrame.Angles(math.random() * 8, math.random() * 8, 0)
 			local tween = TweenService:Create(petal, TweenInfo.new(0.38, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-				CFrame = CFrame.new(head.Position) * spin,
+				CFrame = CFrame.new(target) * spin,
 				Size = Vector3.new(0.1, 0.02, 0.06),
 			})
 			tween:Play()

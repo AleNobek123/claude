@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
 local Net = require(Shared.Net)
+local ShopJuicer = require(script.Parent.ShopJuicer)
 
 local player = Players.LocalPlayer
 
@@ -45,7 +46,7 @@ local function entry(order: number, key: string, def, owned: boolean, onBuy)
 	Juice.Float(icon, 2.5, 2 + order * 0.1)
 	UI.Label({ Text = def.Name, Position = UDim2.fromOffset(10, 98), Size = UDim2.new(1, -20, 0, 24), MaxTextSize = 19, Parent = frame })
 	UI.Label({ Text = def.Description, Font = UI.Body, TextColor3 = UI.Colors.Muted, Position = UDim2.fromOffset(12, 124), Size = UDim2.new(1, -24, 0, 34), MaxTextSize = 12, Parent = frame })
-	UI.Button({
+	local buy = UI.Button({
 		Text = owned and "" or `{def.Robux} R$`,
 		Icon = owned and "Check" or nil,
 		BackgroundColor3 = UI.Colors.Good,
@@ -55,9 +56,14 @@ local function entry(order: number, key: string, def, owned: boolean, onBuy)
 		Parent = frame,
 	}, function()
 		if not owned then
+			ShopJuicer.Burst(frame, 8)
 			onBuy()
 		end
 	end)
+	if not owned then
+		-- Robux buttons get the looping light sweep
+		ShopJuicer.Shine(buy, { Period = 0.8, Pause = 2 + order * 0.15 })
+	end
 	Juice.Pop(frame, order * 0.03)
 end
 
@@ -67,7 +73,8 @@ function Store:_render()
 			child:Destroy()
 		end
 	end
-	local n = 0
+	local n = 1
+	C.Promo:BuildStoreTile(list, n)
 	for _, name in Config.GamepassOrder do
 		n += 1
 		entry(n, name, Config.Gamepasses[name], player:GetAttribute("Pass_" .. name) == true, function()

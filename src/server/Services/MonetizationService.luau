@@ -78,6 +78,14 @@ function ProductGrants.MutationSerum(player, data)
 	Notify.Player(player, "Mutation Serum added. Use it on a bee in the Hive menu.", "rare")
 end
 
+-- Honey Forever ladder: every purchase adds one tier (x2 honey each), forever
+function ProductGrants.HoneyLadder(player, data)
+	data.HoneyTier = (data.HoneyTier or 0) + 1
+	S.DataService:MarkDirty(player, "HoneyTier")
+	player:SetAttribute("HoneyTier", data.HoneyTier)
+	Notify.Player(player, `Honey Forever upgraded: x{Config.HoneyMultiplier(data.HoneyTier)} honey!`, "rare")
+end
+
 -- Gamepasses ---------------------------------------------------------------------------------
 
 function MonetizationService:HasPass(player: Player, name: string): boolean
@@ -144,6 +152,21 @@ function MonetizationService:_request(player: Player, kind: string, name: string
 		else
 			Notify.Player(player, "This product is not configured yet.", "bad")
 		end
+	elseif kind == "Ladder" and name == "Honey" then
+		local data = S.DataService:Get(player)
+		if not data then
+			return
+		end
+		local step = Config.HoneyLadderStep(data.HoneyTier)
+		if step.Id ~= 0 then
+			MarketplaceService:PromptProductPurchase(player, step.Id)
+		elseif studioGrants() then
+			S.DataService:GrantPurchase(player, "studio-" .. HttpService:GenerateGUID(false), function(profile)
+				ProductGrants.HoneyLadder(player, profile)
+			end)
+		else
+			Notify.Player(player, "This product is not configured yet.", "bad")
+		end
 	elseif kind == "Pass" then
 		local def = Config.Gamepasses[name]
 		if not def or self:HasPass(player, name) then
@@ -172,6 +195,11 @@ function MonetizationService:Init(services)
 			passById[def.Id] = name
 		end
 	end
+	for _, step in Config.HoneyLadder.Steps do
+		if step.Id ~= 0 then
+			productById[step.Id] = "HoneyLadder"
+		end
+	end
 	self.RequestPurchase = Net.Event("RequestPurchase")
 end
 
@@ -184,6 +212,9 @@ function MonetizationService:Start()
 		task.spawn(self._checkPasses, self, player)
 		task.spawn(self._checkPolicy, self, player)
 	end
+	S.DataService:OnLoaded(function(player, data)
+		player:SetAttribute("HoneyTier", data.HoneyTier or 0)
+	end)
 	Players.PlayerAdded:Connect(onPlayer)
 	for _, player in Players:GetPlayers() do
 		onPlayer(player)

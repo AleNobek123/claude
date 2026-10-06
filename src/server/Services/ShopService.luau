@@ -78,7 +78,7 @@ function ShopService:GiveTool(player: Player)
 
 	local def = Config.CollectorById[data.Collector] or Config.Collectors[1]
 	local folder = assets("Collectors")
-	local template = folder and folder:FindFirstChild(def.Shape)
+	local template = folder and (folder:FindFirstChild(def.Id) or folder:FindFirstChild(def.Shape))
 	local tool = template and template:Clone() or fallbackTool()
 	tool.Name = def.Name
 	tool.CanBeDropped = false
@@ -114,7 +114,7 @@ function ShopService:GiveBackpack(player: Player)
 	end
 	local def = Config.BackpackById[data.Backpack] or Config.Backpacks[1]
 	local folder = assets("Backpacks")
-	local template = folder and folder:FindFirstChild(def.Shape)
+	local template = folder and (folder:FindFirstChild(def.Id) or folder:FindFirstChild(def.Shape))
 	local model = template and template:Clone() or fallbackBackpack()
 	model.Name = "BeeBackpack"
 	tint(model, def.Color)
@@ -135,7 +135,7 @@ function ShopService:GiveBackpack(player: Player)
 		end
 	end
 	local depth = model:GetExtentsSize().Z
-	model:PivotTo(torso.CFrame * CFrame.new(0, 0.1, torso.Size.Z / 2 + depth / 2 - 0.05))
+	model:PivotTo(torso.CFrame * CFrame.new(0, 0.1, torso.Size.Z / 2 + depth / 2 - 0.05) * CFrame.Angles(0, model:GetAttribute("Yaw") or 0, 0))
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0 = torso
 	weld.Part1 = main

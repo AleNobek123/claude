@@ -37,7 +37,8 @@ end
 
 local function honeyMult(player: Player): number
 	local hive = S.BeeService:GetHiveMods(player)
-	return 1 + (hive and hive.HoneyMult or 0)
+	local data = S.DataService:Get(player)
+	return (1 + (hive and hive.HoneyMult or 0)) * Config.HoneyMultiplier(data and data.HoneyTier)
 end
 
 function ConvertService:IsConverting(player: Player): boolean
