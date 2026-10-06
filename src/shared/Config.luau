@@ -297,7 +297,7 @@ Config.Bosses = {
 	StudioInterval = 150,
 	Lifetime = 300, -- escapes if not defeated in time
 	Types = { "KingBeetle", "StumpSnail" },
-	Fields = { "Clover", "Rose", "Bluebell", "Pumpkin", "Cactus", "Crystal", "Mushroom", "Pine" },
+	Fields = { "Clover", "Rose", "Bluebell", "Pumpkin", "Cactus", "Crystal" },
 }
 
 Config.MonsterSpawns = {

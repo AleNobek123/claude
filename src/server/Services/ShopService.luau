@@ -126,7 +126,8 @@ function ShopService:GiveBackpack(player: Player)
 	end
 	-- sit on the torso's back attachment; meshes are rounded and carry straps in front, so the
 	-- pack is pulled in by part of its depth to touch the back instead of floating behind it
-	local depth = model:GetExtentsSize().Z
+	local _, extents = model:GetBoundingBox() -- oriented to the upright pivot, not the rotated Main
+	local depth = extents.Z
 	local back = torso:FindFirstChild("BodyBackAttachment")
 	local anchor = back and back.WorldCFrame or torso.CFrame * CFrame.new(0, 0, torso.Size.Z / 2)
 	local hug = depth * (model:GetAttribute("Hug") or 0.12)

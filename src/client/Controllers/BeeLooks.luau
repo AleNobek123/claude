@@ -133,8 +133,13 @@ function EXTRAS.Gem(model, body, def, u)
 	add(model, body, "Gem", Vector3.one * 0.18 * u, CFrame.new(0, 0.4 * u, -0.58 * u) * CFrame.Angles(0.8, 0.8, 0), def.Visual.Stripe, Enum.Material.Neon)
 end
 
+-- tilted planetary ring of tiny glowing orbs
 function EXTRAS.Ring(model, body, def, u)
-	add(model, body, "Ring", Vector3.new(0.06, 1.9 * u, 1.9 * u), CFrame.Angles(0.35, 0, math.pi / 2), def.Visual.Stripe, Enum.Material.Neon, Enum.PartType.Cylinder).Transparency = 0.45
+	local tilt = CFrame.Angles(0.35, 0, 0.2)
+	for i = 0, 13 do
+		local a = i / 14 * math.pi * 2
+		add(model, body, "Ring", Vector3.one * 0.11 * u, tilt * CFrame.new(math.cos(a) * 0.85 * u, 0, math.sin(a) * 0.85 * u), def.Visual.Stripe, Enum.Material.Neon, Enum.PartType.Ball)
+	end
 end
 
 function EXTRAS.Moon(model, body, _def, u)

@@ -159,6 +159,8 @@ function GearModels.Backpack(def): Model
 	local main = builder(model, def)
 	main.Name = "Main"
 	model.PrimaryPart = main
+	-- cylinder mains are rotated (Roblox cylinders run along X): pivot on the upright model frame
+	model.WorldPivot = CFrame.new()
 	model:SetAttribute("Procedural", true)
 	return model
 end
@@ -271,6 +273,7 @@ function GearModels.Boot(def, footSize: Vector3): Model
 	local builder = BOOTS[def.Style or "Sneaker"] or BOOTS.Sneaker
 	builder(model, def, footSize)
 	model.PrimaryPart = model:FindFirstChildWhichIsA("BasePart")
+	model.WorldPivot = CFrame.new() -- foot centre, whatever the first part's rotation
 	return model
 end
 
