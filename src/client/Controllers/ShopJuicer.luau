@@ -5,6 +5,8 @@
 	  Rays(gui, opts)     rotating glow rays behind the tile
 	  Sparkle(gui, opts)  stars that twinkle around the tile at a steady rate
 	  Burst(gui, count)   one-shot star burst (purchase, click)
+	  NeonBorder(gui)     animated neon outline (rotating rainbow/gold gradient on a UIStroke)
+	  ValueTag(gui, text) flashing golden ribbon ("BEST VALUE!", "INFINITE STACKING!")
 	  Juice(gui, opts)    all of the above; returns a cleanup function
 
 	One RenderStepped loop drives every effect; entries remove themselves when their gui is gone.
@@ -20,6 +22,8 @@ local ShopJuicer = {}
 local shines = {} -- { Gradient, Period, Pause, Phase, Gui }
 local rays = {} -- { Holder, Speed, Gui, Glow }
 local sparkles = {} -- { Gui, Rate, Color, Acc }
+local borders = {} -- { Gradient, Speed, Gui }
+local tags = {} -- { Label, Scale, Gui, Phase }
 local running = false
 
 local SHINE_TRANSPARENCY = NumberSequence.new({
@@ -89,6 +93,24 @@ local function step(dt: number)
 		if r.Glow then
 			r.Glow.ImageTransparency = 0.35 + math.sin(t * 2.4) * 0.15
 		end
+	end
+	for i = #borders, 1, -1 do
+		local b = borders[i]
+		if not alive(b.Gui) then
+			table.remove(borders, i)
+			continue
+		end
+		b.Gradient.Rotation = (b.Gradient.Rotation + dt * b.Speed) % 360
+	end
+	for i = #tags, 1, -1 do
+		local tag = tags[i]
+		if not alive(tag.Gui) then
+			table.remove(tags, i)
+			continue
+		end
+		local pulse = (math.sin(t * 5 + tag.Phase) + 1) / 2
+		tag.Scale.Scale = 1 + pulse * 0.12
+		tag.Label.TextColor3 = Color3.fromRGB(255, 255, 255):Lerp(Color3.fromRGB(255, 236, 120), pulse)
 	end
 	for i = #sparkles, 1, -1 do
 		local s = sparkles[i]
@@ -224,6 +246,80 @@ function ShopJuicer.Burst(gui: GuiObject, count: number?, color: Color3?)
 	for _ = 1, count or 12 do
 		spawnStar(gui, color or Color3.fromRGB(255, 240, 150), true)
 	end
+end
+
+local RAINBOW = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 80, 120)),
+	ColorSequenceKeypoint.new(0.25, Color3.fromRGB(255, 220, 60)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(80, 255, 160)),
+	ColorSequenceKeypoint.new(0.75, Color3.fromRGB(80, 170, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 120)),
+})
+local GOLD = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 200, 40)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 210)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 200, 40)),
+})
+
+-- Animated neon outline. opts: Style ("Rainbow" | "Gold"), Thickness, Speed
+function ShopJuicer.NeonBorder(gui: GuiObject, opts)
+	opts = opts or {}
+	ensureLoop()
+	local stroke = Instance.new("UIStroke")
+	stroke.Name = "NeonBorder"
+	stroke.Thickness = opts.Thickness or 3
+	stroke.Color = Color3.new(1, 1, 1)
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.Parent = gui
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = opts.Style == "Gold" and GOLD or RAINBOW
+	gradient.Parent = stroke
+	table.insert(borders, { Gradient = gradient, Speed = opts.Speed or 90, Gui = gui })
+	return stroke
+end
+
+-- Flashing golden ribbon in the top-right corner of a tile
+function ShopJuicer.ValueTag(gui: GuiObject, text: string)
+	ensureLoop()
+	local ribbon = Instance.new("Frame")
+	ribbon.Name = "ValueTag"
+	ribbon.AnchorPoint = Vector2.new(0.5, 0.5)
+	ribbon.Position = UDim2.new(1, -18, 0, 10)
+	ribbon.Size = UDim2.fromOffset(0, 24)
+	ribbon.AutomaticSize = Enum.AutomaticSize.X
+	ribbon.Rotation = 8
+	ribbon.BackgroundColor3 = Color3.new(1, 1, 1)
+	ribbon.ZIndex = gui.ZIndex + 5
+	ribbon.Parent = gui
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1, 0)
+	corner.Parent = ribbon
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new(Color3.fromRGB(255, 70, 70), Color3.fromRGB(220, 20, 60))
+	gradient.Rotation = 90
+	gradient.Parent = ribbon
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, 10)
+	padding.PaddingRight = UDim.new(0, 10)
+	padding.Parent = ribbon
+	local scale = Instance.new("UIScale")
+	scale.Parent = ribbon
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.fromOffset(0, 24)
+	label.AutomaticSize = Enum.AutomaticSize.X
+	label.Font = Enum.Font.FredokaOne
+	label.TextSize = 15
+	label.Text = text
+	label.TextColor3 = Color3.new(1, 1, 1)
+	label.ZIndex = ribbon.ZIndex + 1
+	label.Parent = ribbon
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(110, 0, 20)
+	stroke.Thickness = 2
+	stroke.Parent = label
+	table.insert(tags, { Label = label, Scale = scale, Gui = gui, Phase = math.random() * 6 })
+	return ribbon
 end
 
 function ShopJuicer.Juice(gui: GuiObject, opts)

@@ -34,6 +34,7 @@ local ORDER = {
 	"Nests",
 	"Tutorial",
 	"NotificationBadge",
+	"VipTags",
 }
 
 local loaded = {}

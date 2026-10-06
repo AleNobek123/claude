@@ -538,6 +538,37 @@ end
 
 -- Stone gates on the plateau edges ------------------------------------------------------------------------
 
+-- Crimson "X" from two rotated bars (no font glyph needed)
+local function crimsonX(parent: Instance, size: UDim2, position: UDim2)
+	local holder = Instance.new("Frame")
+	holder.Name = "X"
+	holder.BackgroundTransparency = 1
+	holder.AnchorPoint = Vector2.new(0.5, 0.5)
+	holder.Size = size
+	holder.Position = position
+	holder.Parent = parent
+	local ratio = Instance.new("UIAspectRatioConstraint")
+	ratio.Parent = holder
+	for _, angle in { 45, -45 } do
+		local bar = Instance.new("Frame")
+		bar.AnchorPoint = Vector2.new(0.5, 0.5)
+		bar.Position = UDim2.fromScale(0.5, 0.5)
+		bar.Size = UDim2.fromScale(1.1, 0.2)
+		bar.Rotation = angle
+		bar.BackgroundColor3 = Color3.fromRGB(190, 10, 30)
+		bar.BorderSizePixel = 0
+		bar.Parent = holder
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = bar
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = Color3.fromRGB(255, 220, 220)
+		stroke.Thickness = 3
+		stroke.Parent = bar
+	end
+	return holder
+end
+
 local function buildGate(def, gatesFolder)
 	local info = PLATEAUS[def.Id]
 	if not info or not (def.BeesRequired > 0 or def.VIP) then
@@ -550,39 +581,72 @@ local function buildGate(def, gatesFolder)
 	local pos = info.Edge + outward * 1.5
 	local model = place("Gate", CFrame.lookAt(pos, pos + outward), 1.12, gate)
 	local top
+	local span, height = 15, 14
 	if model then
-		model.Name = "StoneGate"
+		model.Name = "StoneArch"
+		-- the old boulder pile is gone: the polished arch frames a red energy seal instead
 		local boulders = model:FindFirstChild("Boulders")
 		if boulders then
-			boulders:SetAttribute("Barrier", true)
+			span = math.min(boulders.Size.X, 18)
+			height = math.min(boulders.Size.Y, 15)
+			boulders:Destroy()
+		end
+		for _, p in model:GetDescendants() do
+			if p:IsA("BasePart") and p.Name ~= "Root" then
+				p.Material = p.Name == "Moss" and Enum.Material.Grass or Enum.Material.Limestone
+				if p.Name ~= "Moss" then
+					p.Color = Color3.fromRGB(214, 204, 186)
+				end
+			end
 		end
 		top = model:FindFirstChild("Arch") or model.PrimaryPart
 	else
-		top = part({ Name = "Boulders", Size = Vector3.new(22, 14, 3), CFrame = CFrame.lookAt(pos + Vector3.new(0, 7, 0), pos + Vector3.new(0, 7, 0) + outward), Color = Color3.fromRGB(140, 132, 122), Material = Enum.Material.Slate, Attributes = { Barrier = true }, Parent = gate })
+		top = part({ Name = "Arch", Size = Vector3.new(22, 3, 3), CFrame = CFrame.lookAt(pos + Vector3.new(0, 16, 0), pos + Vector3.new(0, 16, 0) + outward), Color = Color3.fromRGB(214, 204, 186), Material = Enum.Material.Limestone, Parent = gate })
 	end
+	local seal = part({
+		Name = "Seal",
+		Size = Vector3.new(span, height, 0.4),
+		CFrame = CFrame.lookAt(pos + Vector3.new(0, height / 2 + 0.2, 0), pos + Vector3.new(0, height / 2 + 0.2, 0) + outward),
+		Color = Color3.fromRGB(255, 50, 60),
+		Material = Enum.Material.ForceField,
+		Transparency = 0.35,
+		CastShadow = false,
+		Attributes = { Barrier = true, FadeOnly = true },
+		Parent = gate,
+	})
+	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
+		local gui = Instance.new("SurfaceGui")
+		gui.Name = "Lock" .. face.Name
+		gui.Face = face
+		gui.LightInfluence = 0
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 30
+		gui.Parent = seal
+		crimsonX(gui, UDim2.fromScale(0.42, 0.42), UDim2.fromScale(0.5, 0.38))
+		label(gui, "Requirement", def.VIP and "VIP ONLY" or `{def.BeesRequired} BEES`, { Size = UDim2.fromScale(0.9, 0.2), Position = UDim2.fromScale(0.05, 0.66), TextColor3 = Color3.new(1, 1, 1), TextStrokeColor3 = Color3.fromRGB(120, 0, 10), TextStrokeTransparency = 0 })
+	end
+	-- floating badge visible from afar: red pill, crimson X, requirement
 	local badge = Instance.new("BillboardGui")
 	badge.Name = "Badge"
-	badge.Size = UDim2.new(9, 0, 3.4, 0)
+	badge.Size = UDim2.new(10, 0, 3.4, 0)
 	badge.StudsOffset = Vector3.new(0, 5, 0)
-	badge.MaxDistance = 160
+	badge.MaxDistance = 180
 	badge.LightInfluence = 0
 	badge.Parent = top
 	local back = Instance.new("Frame")
 	back.Size = UDim2.fromScale(1, 1)
-	back.BackgroundColor3 = Color3.fromRGB(40, 28, 18)
-	back.BackgroundTransparency = 0.35
+	back.BackgroundColor3 = Color3.fromRGB(230, 40, 50)
+	back.BackgroundTransparency = 0.25
 	back.Parent = badge
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(1, 0)
 	corner.Parent = back
-	local icon = Instance.new("ImageLabel")
-	icon.BackgroundTransparency = 1
-	icon.Image = def.VIP and Assets.Icons.Star or Assets.Icons.Bee
-	icon.Size = UDim2.fromScale(0.34, 0.9)
-	icon.Position = UDim2.fromScale(0.06, 0.05)
-	icon.ScaleType = Enum.ScaleType.Fit
-	icon.Parent = back
-	label(back, "Requirement", def.VIP and "VIP" or tostring(def.BeesRequired), { Size = UDim2.fromScale(0.52, 0.8), Position = UDim2.fromScale(0.42, 0.1) })
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(255, 200, 200)
+	stroke.Thickness = 2
+	stroke.Parent = back
+	crimsonX(back, UDim2.fromScale(0.26, 0.7), UDim2.fromScale(0.18, 0.5))
+	label(back, "Requirement", def.VIP and "VIP" or `{def.BeesRequired} BEES`, { Size = UDim2.fromScale(0.6, 0.8), Position = UDim2.fromScale(0.34, 0.1) })
 end
 
 -- Hives -----------------------------------------------------------------------------------------------------

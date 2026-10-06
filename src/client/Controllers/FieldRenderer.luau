@@ -156,28 +156,105 @@ function FieldRenderer:_gates()
 							home = part.CFrame
 							part:SetAttribute("HomeCFrame", home)
 						end
-						local goal = open and (home - Vector3.new(0, part.Size.Y + 2, 0)) or home
+						local fadeOnly = part:GetAttribute("FadeOnly") == true
+						local goal = (open and not fadeOnly) and (home - Vector3.new(0, part.Size.Y + 2, 0)) or home
+						local closedTransparency = part:GetAttribute("ClosedTransparency")
+						if closedTransparency == nil then
+							closedTransparency = part.Transparency
+							part:SetAttribute("ClosedTransparency", closedTransparency)
+						end
 						part.CanCollide = not open
+						for _, gui in part:GetChildren() do
+							if gui:IsA("SurfaceGui") then
+								gui.Enabled = not open
+							end
+						end
 						if first then
 							part.CFrame = goal
-							part.Transparency = open and 1 or 0
+							part.Transparency = open and 1 or closedTransparency
 						else
 							TweenService:Create(part, TweenInfo.new(1.4, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), { CFrame = goal }):Play()
-							TweenService:Create(part, TweenInfo.new(1.4), { Transparency = open and 1 or 0 }):Play()
+							TweenService:Create(part, TweenInfo.new(1.4), { Transparency = open and 1 or closedTransparency }):Play()
 							if open then
 								C.Sound:Play("Rumble", { At = part.Position })
 							end
 						end
 					end
 				end
-				local label = gate:FindFirstChild("Requirement", true)
-				if label and label:IsA("TextLabel") then
-					label.TextColor3 = open and Color3.fromRGB(140, 255, 140) or Color3.new(1, 1, 1)
+				local badge = gate:FindFirstChild("Badge", true)
+				if badge then
+					badge.Enabled = not open
 				end
 				if open and not first and C.UI then
 					C.UI:Toast(`{def.Name} unlocked!`, "rare")
 				end
 			end
+		end
+	end
+end
+
+-- HUD prompt when walking up to a locked zone: red translucent banner, crimson X, requirement
+function FieldRenderer:_lockPrompt()
+	local UI = C.UI
+	local holder = UI.Create("CanvasGroup", {
+		Name = "LockedPrompt",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.36),
+		Size = UDim2.fromOffset(420, 96),
+		BackgroundColor3 = Color3.fromRGB(230, 30, 45),
+		BackgroundTransparency = 0.3,
+		GroupTransparency = 1,
+		Visible = false,
+		Parent = UI:_screen(),
+	}, { UI.Corner(22), UI.Create("UIStroke", { Color = Color3.fromRGB(255, 190, 190), Thickness = 3 }) })
+	local x = UI.Create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromOffset(52, 48), Size = UDim2.fromOffset(60, 60), BackgroundTransparency = 1, Parent = holder })
+	for _, angle in { 45, -45 } do
+		UI.Create("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromScale(1.15, 0.24), Rotation = angle, BackgroundColor3 = Color3.fromRGB(140, 0, 20), Parent = x }, { UI.Round(), UI.Create("UIStroke", { Color = Color3.new(1, 1, 1), Thickness = 2.5 }) })
+	end
+	local title = UI.Create("TextLabel", { Position = UDim2.fromOffset(96, 10), Size = UDim2.new(1, -110, 0, 40), BackgroundTransparency = 1, Font = UI.Font, TextSize = 34, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.new(1, 1, 1), Text = "LOCKED", Parent = holder }, { UI.Create("UIStroke", { Color = Color3.fromRGB(110, 0, 10), Thickness = 3 }) })
+	local sub = UI.Create("TextLabel", { Position = UDim2.fromOffset(98, 52), Size = UDim2.new(1, -110, 0, 30), BackgroundTransparency = 1, Font = UI.Font, TextSize = 20, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(255, 230, 230), Text = "", Parent = holder }, { UI.Create("UIStroke", { Color = Color3.fromRGB(110, 0, 10), Thickness = 2 }) })
+	self.Lock = { Holder = holder, Title = title, Sub = sub, Shown = false }
+end
+
+function FieldRenderer:_updateLockPrompt()
+	local lock = self.Lock
+	local map = Workspace:FindFirstChild("Map")
+	local gates = map and map:FindFirstChild("Gates")
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not lock or not gates or not root then
+		return
+	end
+	local near
+	for _, def in Config.Fields do
+		local gate = gates:FindFirstChild(def.Id)
+		local seal = gate and gate:FindFirstChild("Seal")
+		if seal and gatesOpen[def.Id] == false and (seal.Position - root.Position).Magnitude < 22 then
+			near = def
+			break
+		end
+	end
+	if near then
+		lock.Title.Text = near.Name:upper() .. " LOCKED"
+		lock.Sub.Text = near.VIP and "Requires the VIP Field pass" or `Requires {near.BeesRequired} bees  (you have {C.State:BeeCount()})`
+	end
+	local show = near ~= nil
+	if show ~= lock.Shown then
+		lock.Shown = show
+		lock.Holder.Visible = true
+		local scale = lock.Holder:FindFirstChild("UIScale") or C.UI.Create("UIScale", { Parent = lock.Holder })
+		if show then
+			scale.Scale = 0.8
+			TweenService:Create(scale, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+			C.Sound:Play("Notify", { Volume = 0.6 })
+		end
+		local tween = TweenService:Create(lock.Holder, TweenInfo.new(0.2), { GroupTransparency = show and 0 or 1 })
+		tween:Play()
+		if not show then
+			tween.Completed:Once(function()
+				if not lock.Shown then
+					lock.Holder.Visible = false
+				end
+			end)
 		end
 	end
 end
@@ -252,6 +329,13 @@ function FieldRenderer:Start()
 	end)
 	self:_tint()
 	self:_gates()
+	self:_lockPrompt()
+	task.spawn(function()
+		while true do
+			task.wait(0.25)
+			self:_updateLockPrompt()
+		end
+	end)
 end
 
 return FieldRenderer

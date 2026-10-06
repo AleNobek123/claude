@@ -383,10 +383,13 @@ function HUD:_refresh(data)
 		return n < 1e6 and Format.Commas(n) or Format.Short(n)
 	end
 	if math.floor(honey) ~= math.floor(shownHoney) then
-		Juice.CountUp(self.HoneyLabel, shownHoney, honey, formatter, 0.5)
-		if honey > shownHoney then
-			Juice.Punch(self.HoneyLabel, 0.12)
-			Juice.Punch(self.HoneyIcon, 0.25)
+		Juice.CountUp(self.HoneyLabel, shownHoney, honey, formatter, 0.35)
+		-- converting sends honey many times a second: punch at most every 0.7 s so it never flickers
+		local now = os.clock()
+		if honey > shownHoney and now - (self._lastPunch or 0) > 0.7 then
+			self._lastPunch = now
+			Juice.Punch(self.HoneyLabel, 0.1)
+			Juice.Punch(self.HoneyIcon, 0.2)
 		end
 		shownHoney = honey
 	end
@@ -511,8 +514,17 @@ function HUD:Start()
 		self:_layout()
 	end)
 
+	-- coalesce rapid state updates (auto-convert loops) into at most ~6 HUD refreshes a second
+	local queued = false
 	C.State:OnChange({ "Honey", "Pollen", "Backpack", "Bees", "HiveSlots", "Eggs" }, function(data)
-		self:_refresh(data)
+		if queued then
+			return
+		end
+		queued = true
+		task.delay(0.15, function()
+			queued = false
+			self:_refresh(C.State.Data)
+		end)
 	end)
 
 	Net.Event("Notify").OnClientEvent:Connect(function(text, kind)

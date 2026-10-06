@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local VipStyle = require(Shared.VipStyle)
 local Config = require(Shared.Config)
 local BeeData = require(Shared.BeeData)
 local Format = require(Shared.Format)
@@ -211,8 +212,9 @@ function HiveService:UpdateOverhead(player: Player, score: number, title: string
 			humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 		end
 	end
-	local vip = player:GetAttribute("VIP") and "[VIP] " or ""
-	gui.PlayerName.Text = vip .. player.DisplayName
+	local isVip = player:GetAttribute("VIP") == true
+	gui.PlayerName.Text = (isVip and "[VIP] " or "") .. player.DisplayName
+	VipStyle.Apply(gui.PlayerName, isVip)
 	gui.Sub.Text = (title and (title .. "  •  ") or "") .. "Swarm " .. Format.Short(score)
 end
 

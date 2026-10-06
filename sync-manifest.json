@@ -110,6 +110,15 @@
   },
   {
    "path": [
+    "ReplicatedStorage",
+    "Shared",
+    "VipStyle"
+   ],
+   "class": "ModuleScript",
+   "file": "src/shared/VipStyle.luau"
+  },
+  {
+   "path": [
     "ServerScriptService",
     "Server",
     "Main"
@@ -607,6 +616,17 @@
    ],
    "class": "ModuleScript",
    "file": "src/client/Controllers/Viewport.luau"
+  },
+  {
+   "path": [
+    "StarterPlayer",
+    "StarterPlayerScripts",
+    "Client",
+    "Controllers",
+    "VipTags"
+   ],
+   "class": "ModuleScript",
+   "file": "src/client/Controllers/VipTags.luau"
   }
  ]
 }

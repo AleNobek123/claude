@@ -155,6 +155,7 @@ function Promo:_buildBanner()
 	}, { UI.Create("UIScale", { Name = "Responsive" }) })
 	local button = self:_tile(holder, Vector2.new(250, 96), false)
 	ShopJuicer.Rays(button, { Color = Color3.fromRGB(255, 200, 120), Size = 1.25, Speed = 30 })
+	ShopJuicer.NeonBorder(button, { Style = "Gold", Thickness = 3 })
 	Juice.Float(button, 4, 1.6)
 	self.Banner = holder
 	-- periodic attention wiggle
@@ -183,6 +184,8 @@ function Promo:BuildStoreTile(parent: Instance, order: number)
 	button.Position = UDim2.fromScale(0.5, 0.5)
 	button.Size = UDim2.new(1, -8, 0.62, 0)
 	ShopJuicer.Rays(button, { Color = Color3.fromRGB(255, 200, 120), Size = 1.1, Speed = 30 })
+	ShopJuicer.NeonBorder(button, { Style = "Rainbow", Thickness = 3 })
+	ShopJuicer.ValueTag(button, "INFINITE STACKING!")
 	return cell
 end
 

@@ -39,13 +39,28 @@ function Store:Init(controllers)
 	Juice = UI.Juice
 end
 
-local function entry(order: number, key: string, def, owned: boolean, onBuy)
-	local frame = UI.Glass({ LayoutOrder = order, Transparency = 0.2, Radius = 20, Parent = list })
-	UI.Icon("Glow", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 56), Size = UDim2.fromOffset(110, 110), ImageColor3 = UI.Colors.HoneyLight, ImageTransparency = 0.4, Parent = frame })
+-- saturated gradient per item family; passes get a gold neon border, products a rainbow one
+local FAMILY = {
+	Pass = { Top = Color3.fromRGB(190, 120, 255), Bottom = Color3.fromRGB(110, 50, 210), Border = "Gold" },
+	Product = { Top = Color3.fromRGB(255, 200, 80), Bottom = Color3.fromRGB(255, 120, 40), Border = "Rainbow" },
+}
+
+local function entry(order: number, key: string, def, owned: boolean, onBuy, family: string)
+	local style = FAMILY[family] or FAMILY.Product
+	local frame = UI.Create("Frame", { LayoutOrder = order, BackgroundColor3 = Color3.new(1, 1, 1), Parent = list }, { UI.Corner(20), UI.Gradient(style.Top, style.Bottom) })
+	UI.Create("Frame", { Name = "Gloss", Position = UDim2.new(0, 8, 0, 6), Size = UDim2.new(1, -16, 0, 56), BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.72, BorderSizePixel = 0, Parent = frame }, { UI.Corner(16) })
+	if not owned then
+		ShopJuicer.NeonBorder(frame, { Style = style.Border, Thickness = 3 })
+		if def.Tag then
+			ShopJuicer.ValueTag(frame, def.Tag)
+		end
+	end
+	UI.Icon("Glow", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 56), Size = UDim2.fromOffset(120, 120), ImageColor3 = Color3.fromRGB(255, 250, 220), ImageTransparency = 0.25, Parent = frame })
 	local icon = UI.Icon(ICONS[key] or "Gift", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.new(0.5, 0, 0, 54), Size = UDim2.fromOffset(72, 72), Parent = frame })
 	Juice.Float(icon, 2.5, 2 + order * 0.1)
-	UI.Label({ Text = def.Name, Position = UDim2.fromOffset(10, 98), Size = UDim2.new(1, -20, 0, 24), MaxTextSize = 19, Parent = frame })
-	UI.Label({ Text = def.Description, Font = UI.Body, TextColor3 = UI.Colors.Muted, Position = UDim2.fromOffset(12, 124), Size = UDim2.new(1, -24, 0, 34), MaxTextSize = 12, Parent = frame })
+	local title = UI.Label({ Text = def.Name, Position = UDim2.fromOffset(10, 98), Size = UDim2.new(1, -20, 0, 24), MaxTextSize = 19, TextColor3 = Color3.new(1, 1, 1), Parent = frame })
+	UI.Create("UIStroke", { Color = style.Bottom:Lerp(Color3.new(0, 0, 0), 0.5), Thickness = 2, Parent = title })
+	UI.Label({ Text = def.Description, Font = UI.Body, TextColor3 = Color3.fromRGB(255, 248, 235), Position = UDim2.fromOffset(12, 124), Size = UDim2.new(1, -24, 0, 34), MaxTextSize = 12, Parent = frame })
 	local buy = UI.Button({
 		Text = owned and "" or `{def.Robux} R$`,
 		Icon = owned and "Check" or nil,
@@ -79,7 +94,7 @@ function Store:_render()
 		n += 1
 		entry(n, name, Config.Gamepasses[name], player:GetAttribute("Pass_" .. name) == true, function()
 			Net.Event("RequestPurchase"):FireServer("Pass", name)
-		end)
+		end, "Pass")
 	end
 	for _, name in Config.ProductOrder do
 		local def = Config.Products[name]
@@ -87,7 +102,7 @@ function Store:_render()
 			n += 1
 			entry(n, name, def, false, function()
 				Net.Event("RequestPurchase"):FireServer("Product", name)
-			end)
+			end, "Product")
 		end
 	end
 end

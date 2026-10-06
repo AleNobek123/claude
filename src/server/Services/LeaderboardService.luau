@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local VipStyle = require(Shared.VipStyle)
 local Format = require(Shared.Format)
 
 local LeaderboardService = {}
@@ -76,8 +77,11 @@ local function render(boardName: string, entries: { { UserId: number, Value: num
 			local entry = entries[i]
 			if entry then
 				row.Text = `{i}.  {nameOf(entry.UserId)}  —  {Format.Short(entry.Value)}`
+				local online = Players:GetPlayerByUserId(entry.UserId)
+				VipStyle.Apply(row, online ~= nil and online:GetAttribute("VIP") == true)
 			else
 				row.Text = `{i}.  ---`
+				VipStyle.Apply(row, false)
 			end
 		end
 	end
