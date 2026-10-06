@@ -88,8 +88,8 @@ function Promo:_tile(parent: Instance, size: Vector2, compact: boolean)
 	outlined({
 		Name = "Forever",
 		Text = "FOREVER",
-		Position = UDim2.new(0, textLeft, 0.48, 0),
-		Size = UDim2.new(0.5, 0, 0.22, 0),
+		Position = UDim2.new(0, textLeft, 0.5, 0),
+		Size = UDim2.new(0.28, 0, 0.18, 0),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = Color3.fromRGB(255, 246, 170),
 		ZIndex = 4,
@@ -99,7 +99,7 @@ function Promo:_tile(parent: Instance, size: Vector2, compact: boolean)
 		Name = "Price",
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, -8, 1, -7),
-		Size = UDim2.new(0.42, 0, 0.3, 0),
+		Size = UDim2.new(0.34, 0, 0.28, 0),
 		BackgroundColor3 = Color3.fromRGB(70, 210, 90),
 		ZIndex = 4,
 		Parent = button,
@@ -114,7 +114,7 @@ function Promo:_tile(parent: Instance, size: Vector2, compact: boolean)
 	local owned = outlined({
 		Name = "Owned",
 		Position = UDim2.new(0, textLeft, 0.72, 0),
-		Size = UDim2.new(0.34, 0, 0.2, 0),
+		Size = UDim2.new(0.3, 0, 0.17, 0),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = Color3.fromRGB(255, 255, 255),
 		ZIndex = 4,

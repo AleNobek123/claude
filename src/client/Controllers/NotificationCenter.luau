@@ -63,10 +63,10 @@ local function build(text: string, style): CanvasGroup
 		BackgroundTransparency = 1,
 		Image = UI.Icons.Glow,
 		ImageColor3 = Color3.fromRGB(40, 22, 6),
-		ImageTransparency = 0.72,
+		ImageTransparency = 0.84,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.new(0.8, 0, 2.2, 0),
+		Size = UDim2.new(0.62, 0, 1.6, 0),
 		Parent = group,
 	})
 	local row = UI.Create("Frame", {
