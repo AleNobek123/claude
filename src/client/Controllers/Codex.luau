@@ -52,7 +52,7 @@ function Codex:_render()
 				if not known then
 					Viewport.Silhouette(model)
 				end
-				Viewport.Model(preview, model, { Mode = known and "float" or nil, Zoom = 0.9 })
+				Viewport.Model(preview, model, { Mode = known and "hover" or nil, HoverTarget = card, Zoom = 0.9 })
 			end
 			UI.Create("Frame", { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 124), Size = UDim2.fromOffset(12, 12), BackgroundColor3 = rarity.Color, Parent = card }, { UI.Round() })
 			UI.Label({ Text = known and def.Name or "???", Position = UDim2.fromOffset(8, 140), Size = UDim2.new(1, -16, 0, 24), MaxTextSize = 18, TextColor3 = known and UI.Colors.Text or UI.Colors.Muted, Parent = card })

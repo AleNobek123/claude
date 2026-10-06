@@ -38,15 +38,32 @@ local function frameModel(camera: Camera, model: Model, zoom: number?, pitch: nu
 	camera.CFrame = CFrame.lookAt(cf.Position - dir * distance, cf.Position)
 end
 
--- mode: "spin" (slow turntable), "float" (bob + gentle sway), "sleep" (slow breathing), nil (static)
+-- mode: "spin" (turntable), "float" (turntable + bob), "hover" (still; spins while the pointer
+-- is over opts.HoverTarget, used for grids of cards), nil (static)
 function Viewport.Model(parent: Instance, model: Model, opts)
 	opts = opts or {}
 	local vp, camera = makeFrame(parent, opts.Props)
 	model:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(opts.Yaw or 200), 0))
 	model.Parent = vp
 	frameModel(camera, model, opts.Zoom, opts.Pitch)
-	if opts.Mode then
-		animated[vp] = { Model = model, Base = model:GetPivot(), Mode = opts.Mode, Phase = math.random() * 6 }
+	local mode = opts.Mode
+	if mode == "sleep" then
+		mode = "hover" -- dozens of breathing hive cells cost more than they add
+	end
+	if mode then
+		local entry = { Vp = vp, Model = model, Base = model:GetPivot(), Mode = mode, Angle = 0, Time = math.random() * 6, Hover = false }
+		animated[vp] = entry
+		if mode == "hover" then
+			local target = opts.HoverTarget or parent
+			if target:IsA("GuiObject") then
+				target.MouseEnter:Connect(function()
+					entry.Hover = true
+				end)
+				target.MouseLeave:Connect(function()
+					entry.Hover = false
+				end)
+			end
+		end
 		vp.Destroying:Connect(function()
 			animated[vp] = nil
 		end)
@@ -123,38 +140,19 @@ local function onScreen(vp: ViewportFrame): boolean
 	return false
 end
 
--- Every on-screen viewport moves every frame (smooth); hidden / scrolled-away ones cost nothing.
--- Poses come from the clock, so motion keeps the same speed whatever the frame rate.
-local visible = {}
-local lastScan = 0
+-- Only a few previews ever move at once (detail views, the hovered card), and each keeps its own
+-- angle that advances with the frame time: motion is smooth, and a preview that scrolls away and
+-- back continues where it stopped instead of snapping to a new pose.
+local SPIN = { spin = 0.9, float = 0.7, hover = 1.6 }
 
-local function pose(entry, t: number)
-	local model = entry.Model
-	local base = entry.Base
-	if entry.Mode == "spin" then
-		model:PivotTo(base * CFrame.Angles(0, t * 0.9, 0))
-	elseif entry.Mode == "float" then
-		-- steady turntable + gentle bob (a back-and-forth sway read as speeding up / slowing down)
-		model:PivotTo(base * CFrame.new(0, math.sin(t * 2 + entry.Phase) * 0.08, 0) * CFrame.Angles(0, t * 0.7 + entry.Phase, 0))
-	elseif entry.Mode == "sleep" then
-		model:PivotTo(base * CFrame.new(0, math.sin(t * 1.4 + entry.Phase) * 0.04, 0) * CFrame.Angles(math.rad(8 + math.sin(t * 1.4 + entry.Phase) * 3), 0, 0))
-	end
-end
-
-RunService.RenderStepped:Connect(function()
-	local t = os.clock()
-	if t - lastScan > 0.2 then
-		lastScan = t
-		table.clear(visible)
-		for vp, entry in animated do
-			if vp.Parent and onScreen(vp) then
-				table.insert(visible, entry)
-			end
-		end
-	end
-	for _, entry in visible do
-		if entry.Model.Parent then
-			pose(entry, t)
+RunService.RenderStepped:Connect(function(dt)
+	dt = math.min(dt, 0.1)
+	for vp, entry in animated do
+		if (entry.Mode ~= "hover" or entry.Hover) and entry.Model.Parent and onScreen(vp) then
+			entry.Angle += dt * (SPIN[entry.Mode] or 0.9)
+			entry.Time += dt
+			local bob = entry.Mode == "float" and math.sin(entry.Time * 2) * 0.08 or 0
+			entry.Model:PivotTo(entry.Base * CFrame.new(0, bob, 0) * CFrame.Angles(0, entry.Angle, 0))
 		end
 	end
 end)

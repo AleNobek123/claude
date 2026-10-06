@@ -169,7 +169,7 @@ function Eggs:_beeCard(order: number, id: string, chance: number, discovered: bo
 	UI.Icon("Glow", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.55), Size = UDim2.fromOffset(90, 90), ImageColor3 = color, ImageTransparency = 0.4, Parent = preview })
 	local model = C.BeeRenderer and C.BeeRenderer.Build(id, nil)
 	if model then
-		Viewport.Model(preview, model, { Mode = "spin", Zoom = 0.9 })
+		Viewport.Model(preview, model, { Mode = "hover", HoverTarget = card, Zoom = 0.9 })
 	end
 	rarityPill(card, def.Rarity, { Position = UDim2.fromOffset(6, 6) })
 	if not discovered then

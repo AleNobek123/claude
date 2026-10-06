@@ -200,7 +200,7 @@ function Hive:_paintCell(slot: number, data, unlocked: number, inCombo)
 			local model = C.BeeRenderer.Build(record.Id, record.Mutation)
 			if model then
 				cell.Viewport = Viewport.Model(cell.Button, model, {
-					Mode = "sleep",
+					Mode = "hover",
 					Zoom = 0.9,
 					Props = {
 						AnchorPoint = Vector2.new(0.5, 0.5),

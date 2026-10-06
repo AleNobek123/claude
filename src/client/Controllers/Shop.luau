@@ -184,7 +184,7 @@ function Shop:_render()
 			model = Viewport.Clone("Collectors", item.Id) or Viewport.Clone("Collectors", item.Shape)
 		end
 		if model then
-			Viewport.Model(preview, model, { Mode = "spin", Zoom = 0.95, Pitch = 18 })
+			Viewport.Model(preview, model, { Mode = "hover", HoverTarget = frame, Zoom = 0.95, Pitch = 18 })
 		end
 		stats(frame, tab, item)
 		local button
