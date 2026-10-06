@@ -1,5 +1,29 @@
 # Bee Tycoon: Honey Empire – Roblox page assets
 
+## Game description (max 1000 characters)
+
+```
+🐝 Build the sweetest bee empire on Roblox!
+
+Collect pollen in 10 flower fields, turn it into honey at your hive and grow a swarm of unique bees.
+
+🍯 FEATURES
+• 31 bees from Common to Mythic – hatch eggs and fill up to 35 hive cells
+• Gifted, Neon and Shadow mutations for extra power
+• 10 fields: Sunflower Meadow, Pumpkin Patch, Cactus Canyon, Crystal Peak, Mushroom Hollow and more
+• World bosses like the King Beetle and the Stump Snail – team up for rare eggs
+• Day & night cycle, global events and field monsters
+• Upgrade your tools, backpacks and boots
+• Daily login streak, playtime gifts and codes
+• Bee Album with every bee and its synergies
+
+Start with one little bee and become the Honey Emperor! 👑
+
+👍 Like and ⭐ favorite the game to get notified about updates!
+```
+
+Genre: **Simulation**. Max players per server: **8** (one hive each).
+
 ## Game icon
 `icon_game.png` (512×512)
 
