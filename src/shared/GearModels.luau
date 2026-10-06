@@ -267,11 +267,66 @@ function BOOTS.Royal(model, def, f)
 	part(model, "Gem", Vector3.new(0.25, 0.25, 0.25), CFrame.new(0, 0, -(f.Z / 2 + 0.2)) * CFrame.Angles(0.8, 0.8, 0), Color3.fromRGB(255, 80, 160), Enum.Material.Neon)
 end
 
+-- Blender-made boots (Assets.Boots, see tools/IntegrateV6): parts in the frame of a reference
+-- foot, stretched to the real foot; Role says how to colour each part
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BOOT_PAINT = {
+	Sole = { Color3.fromRGB(245, 245, 240), Enum.Material.SmoothPlastic, 0 },
+	Dark = { Color3.fromRGB(52, 46, 52), Enum.Material.SmoothPlastic, 0 },
+	Metal = { Color3.fromRGB(175, 180, 190), Enum.Material.Metal, 0 },
+	Gold = { Color3.fromRGB(255, 205, 70), Enum.Material.Foil, 0 },
+	Pink = { Color3.fromRGB(255, 130, 185), Enum.Material.SmoothPlastic, 0 },
+	White = { Color3.fromRGB(250, 250, 255), Enum.Material.SmoothPlastic, 0 },
+	Honey = { Color3.fromRGB(255, 175, 30), Enum.Material.Glass, 0.15 },
+	Wood = { Color3.fromRGB(130, 86, 46), Enum.Material.Wood, 0 },
+	Fire = { Color3.fromRGB(255, 140, 30), Enum.Material.Neon, 0.2 },
+}
+
+local function meshBoot(model: Model, def, footSize: Vector3): boolean
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local folder = assets and assets:FindFirstChild("Boots")
+	local template = folder and folder:FindFirstChild(def.Style or "Sneaker")
+	if not template then
+		return false
+	end
+	local ref = template:GetAttribute("FootSize") or Vector3.new(1, 0.55, 1.5)
+	local k = footSize / ref
+	for _, src in template:GetChildren() do
+		if src:IsA("BasePart") then
+			local p = src:Clone()
+			local role = src:GetAttribute("Role")
+			if role == "Main" then
+				p.Color = def.Color
+				p.Material = def.Material or Enum.Material.SmoothPlastic
+				p.Transparency = p.Material == Enum.Material.Glass and 0.2 or 0
+			elseif role == "Accent" then
+				p.Color = def.Accent or Color3.new(1, 1, 1)
+				p.Material = Enum.Material.SmoothPlastic
+			else
+				local paint = BOOT_PAINT[role] or BOOT_PAINT.Sole
+				p.Color, p.Material, p.Transparency = paint[1], paint[2], paint[3]
+			end
+			p.Size = src.Size * k
+			p.CFrame = CFrame.new(src.CFrame.Position * k) * src.CFrame.Rotation
+			p.Anchored = true
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
+			p.Massless = true
+			p.CastShadow = false
+			p.Parent = model
+		end
+	end
+	return true
+end
+
 function GearModels.Boot(def, footSize: Vector3): Model
 	local model = Instance.new("Model")
 	model.Name = "BeeBoot"
-	local builder = BOOTS[def.Style or "Sneaker"] or BOOTS.Sneaker
-	builder(model, def, footSize)
+	if not meshBoot(model, def, footSize) then
+		local builder = BOOTS[def.Style or "Sneaker"] or BOOTS.Sneaker
+		builder(model, def, footSize)
+	end
 	local first = model:FindFirstChildWhichIsA("BasePart")
 	first.PivotOffset = first.CFrame:Inverse() -- pivot on the foot centre, whatever the part's rotation
 	model.PrimaryPart = first

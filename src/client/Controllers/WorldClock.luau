@@ -71,7 +71,7 @@ function WorldClock:_update()
 	-- day / night
 	local night = DayNight.IsNight(now)
 	local change = Format.Time(DayNight.NextChange(now))
-	pills.Day.Glyph.Text = night and "☾" or "☀"
+	pills.Day.Glyph.Text = night and "🌙" or "☀️"
 	pills.Day.Glyph.TextColor3 = night and Color3.fromRGB(170, 190, 255) or Color3.fromRGB(255, 214, 70)
 	pills.Day.Text.Text = night and `Night · day in {change}` or `Day · night in {change}`
 

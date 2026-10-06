@@ -176,7 +176,7 @@ Config.Backpacks = EconomicScaling.Build("Backpacks", {
 	{ Id = "HivePack", Name = "Hive Pack", Shape = "Tank", Color = Color3.fromRGB(255, 190, 40) },
 	{ Id = "PorcelainTank", Name = "Porcelain Tank", Shape = "Tank", Color = Color3.fromRGB(235, 240, 250) },
 	{ Id = "RoyalReservoir", Name = "Royal Reservoir", Shape = "Tank", Color = Color3.fromRGB(255, 120, 170) },
-	{ Id = "CrystalJar", Name = "Crystal Jar", Shape = "Canister", Model = "Jar", Variant = { Color = Color3.fromRGB(150, 235, 255), Material = Enum.Material.Glass } },
+	{ Id = "CrystalJar", Name = "Crystal Jar", Shape = "Canister" }, -- own template (tools/IntegrateV6)
 	{ Id = "LavaCanister", Name = "Lava Canister", Shape = "Canister", Model = "Canister", Variant = { Color = Color3.fromRGB(255, 90, 20), Material = Enum.Material.Neon } },
 	{ Id = "ShadowSatchel", Name = "Shadow Satchel", Shape = "Pouch", Model = "Satchel", Variant = { Color = Color3.fromRGB(70, 40, 110), Material = Enum.Material.Glass } },
 	{ Id = "FrostHive", Name = "Frost Hive Pack", Shape = "Tank", Model = "HivePack", Variant = { Color = Color3.fromRGB(190, 235, 255), Material = Enum.Material.Ice } },

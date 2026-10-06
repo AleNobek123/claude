@@ -16,6 +16,7 @@ local function add(model: Model, body: BasePart, name: string, size: Vector3, of
 	local p = Instance.new("Part")
 	p.Name = name
 	p:SetAttribute("Role", "Accessory")
+	p:SetAttribute("Accessory", true)
 	p.Size = size
 	p.CFrame = body.CFrame * offset
 	p.Color = color
@@ -160,6 +161,67 @@ function EXTRAS.Bubble(model, body, _def, u)
 	add(model, body, "Bubble", Vector3.one * 1.7 * u, CFrame.new(0, 0.05 * u, 0), Color3.fromRGB(190, 230, 255), Enum.Material.Glass, Enum.PartType.Ball).Transparency = 0.82
 end
 
+-- Blender-made accessories (Assets.BeeAccessories, see tools/IntegrateV6): parts sit in the
+-- body frame of the template bee; Paint says how to colour each part
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local WHITE = Color3.new(1, 1, 1)
+local ORANGE = Color3.fromRGB(255, 140, 30)
+local PAINT = {
+	Metal = function() return Color3.fromRGB(172, 178, 188), Enum.Material.Metal, 0 end,
+	Gold = function() return Color3.fromRGB(255, 204, 70), Enum.Material.Foil, 0 end,
+	Dark = function() return Color3.fromRGB(36, 32, 38), Enum.Material.SmoothPlastic, 0 end,
+	White = function() return Color3.fromRGB(250, 248, 240), Enum.Material.SmoothPlastic, 0 end,
+	Red = function() return Color3.fromRGB(222, 48, 58), Enum.Material.Fabric, 0 end,
+	Green = function() return Color3.fromRGB(96, 204, 72), Enum.Material.SmoothPlastic, 0 end,
+	Pink = function() return Color3.fromRGB(255, 128, 186), Enum.Material.SmoothPlastic, 0 end,
+	Wood = function() return Color3.fromRGB(126, 84, 46), Enum.Material.Wood, 0 end,
+	Honey = function() return Color3.fromRGB(255, 172, 30), Enum.Material.Glass, 0.15 end,
+	Lens = function() return Color3.fromRGB(22, 22, 30), Enum.Material.Glass, 0.1 end,
+	Glass = function() return Color3.fromRGB(200, 235, 255), Enum.Material.Glass, 0.78 end,
+	Crystal = function(def) return def.Visual.Body:Lerp(WHITE, 0.5), Enum.Material.Glass, 0.2 end,
+	Stripe = function(def) return def.Visual.Stripe, Enum.Material.SmoothPlastic, 0 end,
+	Neon = function(def) return def.Visual.Stripe:Lerp(ORANGE, 0.6), Enum.Material.Neon, 0 end,
+}
+-- per accessory tweaks of the role palette
+local OVERRIDE = {
+	Bolts = { Neon = function() return Color3.fromRGB(255, 240, 90), Enum.Material.Neon, 0 end },
+	Ring = { Neon = function(def) return def.Visual.Stripe, Enum.Material.Neon, 0.25 end },
+	Gem = { Stripe = function(def) return def.Visual.Stripe:Lerp(WHITE, 0.2), Enum.Material.Neon, 0 end },
+	Mane = { Stripe = function(def) return def.Visual.Stripe:Lerp(ORANGE, 0.25), Enum.Material.SmoothPlastic, 0 end },
+}
+
+local function meshAccessory(model: Model, body: BasePart, def, name: string, u: number): boolean
+	local assets = ReplicatedStorage:FindFirstChild("Assets")
+	local folder = assets and assets:FindFirstChild("BeeAccessories")
+	local template = folder and folder:FindFirstChild(name)
+	if not template then
+		return false
+	end
+	for _, src in template:GetChildren() do
+		if src:IsA("BasePart") then
+			local p = src:Clone()
+			local paint = src:GetAttribute("Role") or "Stripe"
+			local fn = (OVERRIDE[name] and OVERRIDE[name][paint]) or PAINT[paint] or PAINT.Stripe
+			local color, material, transparency = fn(def)
+			p.Name = name
+			p.Color = color
+			p.Material = material
+			p.Transparency = transparency
+			p.Size = src.Size * u
+			p.CFrame = body.CFrame * CFrame.new(src.CFrame.Position * u) * src.CFrame.Rotation
+			p:SetAttribute("Role", "Accessory")
+			p:SetAttribute("Accessory", true)
+			p.Anchored = true
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
+			p.CastShadow = false
+			p.Parent = model
+		end
+	end
+	return true
+end
+
 local AURAS = {
 	Fire = { Color = Color3.fromRGB(255, 120, 30), Rate = 10, Speed = 1.5, Size = 0.35, Light = 1 },
 	Frost = { Color = Color3.fromRGB(190, 235, 255), Rate = 6, Speed = 0.8, Size = 0.25, Light = 0.6 },
@@ -174,25 +236,29 @@ local AURAS = {
 function BeeLooks.Apply(model: Model, def, body: BasePart, allowAura: boolean?)
 	local visual = def.Visual or {}
 	local shape = visual.Shape
+	local reference = model:FindFirstChild("Body") or body
+	-- accessories first, in the template body frame, so the reshape below fits them to the body
+	local u = math.max(reference.Size.Z, 0.5) / 1.45
+	for _, name in visual.Extras or {} do
+		if not meshAccessory(model, reference, def, name, u) then
+			local builder = EXTRAS[name]
+			if builder then
+				builder(model, reference, def, u * 1.45)
+			end
+		end
+	end
 	if shape then
 		for _, p in model:GetDescendants() do
-			if p:IsA("BasePart") and p ~= body then
-				local rel = body.CFrame:ToObjectSpace(p.CFrame)
-				p.CFrame = body.CFrame * CFrame.new(rel.Position * shape) * rel.Rotation
+			if p:IsA("BasePart") and p ~= body and p ~= reference then
+				local rel = reference.CFrame:ToObjectSpace(p.CFrame)
+				p.CFrame = reference.CFrame * CFrame.new(rel.Position * shape) * rel.Rotation
 				local role = p:GetAttribute("Role") or p.Name
-				if RESIZE[role] then
+				if RESIZE[role] or p:GetAttribute("Accessory") then
 					p.Size *= shape
 				end
 			end
 		end
-	end
-	local reference = model:FindFirstChild("Body") or body
-	local u = math.max(reference.Size.Z, 0.5) / 1.45 * (shape and shape.Z or 1)
-	for _, name in visual.Extras or {} do
-		local builder = EXTRAS[name]
-		if builder then
-			builder(model, body, def, u * 1.45)
-		end
+		reference.Size *= shape
 	end
 	local aura = visual.Aura and AURAS[visual.Aura]
 	if aura and allowAura ~= false then
